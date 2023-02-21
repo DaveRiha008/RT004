@@ -1,2 +1,3 @@
 width=1921
 height=1080
+ratio=1
