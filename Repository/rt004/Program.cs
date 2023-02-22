@@ -7,7 +7,6 @@ namespace rt004
 {
   internal class Program
   {
-    
     class ConfigInputHandler
     {
       public StreamReader input;
@@ -89,6 +88,7 @@ namespace rt004
       StreamReader configStream = new StreamReader(Console.OpenStandardInput());
       try
       {
+        if (configFileName is null) throw new IOException(); 
         configStream = new StreamReader(configFileName);
       }
       catch
@@ -101,7 +101,6 @@ namespace rt004
       if (configOptions.TryGetValue("width", out _)) int.TryParse(configOptions["width"], out imPar.width);
       if (configOptions.TryGetValue("height", out _)) int.TryParse(configOptions["height"], out imPar.height);
       if (configOptions.TryGetValue("ratio", out _)) int.TryParse(configOptions["ratio"], out imPar.ratio);
-
 
       // HDR image.
 
