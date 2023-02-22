@@ -52,27 +52,37 @@ namespace rt004
       }
     }
 
-    static void CreateHDRImage(FloatImage fi, int wid, int hei, int ratio)
+    static void CreateHDRImage(FloatImage fi, ImageParameters imPar)
     {
-      for (int i = 0; i < wid; i++)
+      for (int i = 0; i < imPar.width; i++)
       {
-        for (int j = 0; j < hei; j++)
+        for (int j = 0; j < imPar.height; j++)
         {
-          float red = i / (float)wid;
-          float green = j / (float)hei;
-          float blue = (red + green) / ratio;
+          float red = i / (float)imPar.width;
+          float green = j / (float)imPar.height;
+          float blue = (red + green) / imPar.ratio;
           float[] color = new float[3] { red, green, blue };
           fi.PutPixel(i, j, color);
         }
+      }
+    }
+    struct ImageParameters
+    {
+      public int width;
+      public int height;
+      public int ratio;
+      public ImageParameters(int width, int height, int ratio)
+      {
+        this.width = width;
+        this.height = height;
+        this.ratio = ratio;
       }
     }
     static void Main(string[] args)
     {
       // Parameters.
       // TODO: parse command-line arguments and/or your config file.
-      int wid = 600;
-      int hei = 450;
-      int ratio = 2;
+      ImageParameters imPar = new ImageParameters(600, 450, 2);
       string fileName = "demo.pfm";
       Console.WriteLine("Input your config file name (path): ");
       string? configFileName = Console.ReadLine();
@@ -88,19 +98,19 @@ namespace rt004
       Dictionary<string, string> configOptions = new();
       LoadConfig(configStream, configOptions);
 
-      if (configOptions.TryGetValue("width", out _)) int.TryParse(configOptions["width"], out wid);
-      if (configOptions.TryGetValue("height", out _)) int.TryParse(configOptions["height"], out hei);
-      if (configOptions.TryGetValue("ratio", out _)) int.TryParse(configOptions["ratio"], out ratio);
+      if (configOptions.TryGetValue("width", out _)) int.TryParse(configOptions["width"], out imPar.width);
+      if (configOptions.TryGetValue("height", out _)) int.TryParse(configOptions["height"], out imPar.height);
+      if (configOptions.TryGetValue("ratio", out _)) int.TryParse(configOptions["ratio"], out imPar.ratio);
 
 
       // HDR image.
 
-      FloatImage fi = new FloatImage(wid, hei, 3);
+      FloatImage fi = new FloatImage(imPar.width, imPar.height, 3);
 
       // TODO: put anything interesting into the image.
       // TODO: use fi.PutPixel() function, pixel should be a float[3] array [R, G, B]
 
-      CreateHDRImage(fi, wid, hei, ratio);
+      CreateHDRImage(fi, imPar);
 
       //fi.SaveHDR(fileName);   // Doesn't work well yet...
       fi.SavePFM(fileName);
