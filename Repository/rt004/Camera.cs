@@ -27,7 +27,8 @@ namespace rt004
       this.position = position;
       this.viewVector = viewVector;
     }
-    public void SetPosition(float x, float y, float z) { position = new Vector3(x,y,z); }
+    public void SetPosition(float x, float y, float z) { position = new Vector3(x, y, z); }
+    public void SetPosition(Vector3 vector) { position = vector; }
 
     public void SetPositionX(float x) { position.X = x; }
 
@@ -38,6 +39,7 @@ namespace rt004
     public Vector3 GetPosition() { return position; }
 
     public void SetViewVector(float x, float y, float z) { viewVector = new Vector3(x, y, z); }
+    public void SetViewVector(Vector3 vector) { viewVector = vector; }
     public void SetViewVectorX(float x) { viewVector.X = x; }
     public void SetViewVectorY(float y) { viewVector.Y = y; }
     public void SetViewVectorZ(float z) { viewVector.Z = z; }
@@ -48,7 +50,14 @@ namespace rt004
     int currentIndex = 0;
     public int CreateRay(float x, float y, float z)
     {
-      rays.Add(new Ray(position, new Vector3(x,y,z), currentIndex));
+      rays.Add(new Ray(position, new Vector3(x, y, z), currentIndex));
+      rayIndeces.Add(currentIndex);
+      currentIndex++;
+      return currentIndex - 1;
+    }
+    public int CreateRay(Vector3 vector)
+    {
+      rays.Add(new Ray(position, vector, currentIndex));
       rayIndeces.Add(currentIndex);
       currentIndex++;
       return currentIndex - 1;

@@ -1,4 +1,4 @@
-﻿//using System.Numerics;
+﻿using System.Numerics;
 #nullable enable
 
 using System.Security.Cryptography;
@@ -102,6 +102,11 @@ namespace rt004
       if (configOptions.TryGetValue("height", out _)) int.TryParse(configOptions["height"], out imPar.height);
       if (configOptions.TryGetValue("ratio", out _)) int.TryParse(configOptions["ratio"], out imPar.ratio);
 
+      Sphere sphere1 = new Sphere(new Vector3(4,0,0), 2);
+      Sphere sphere2 = new Sphere(new Vector3(6,0,0), 2);
+      Camera camera = new Camera(new Vector3(0, 0, 0), new Vector3(1, 0, 0));
+      int rayIndex = camera.CreateRay(camera.GetViewVector());
+      Vector3? intersection = sphere1.GetIntersection(camera.GetRay(rayIndex));
       // HDR image.
 
       FloatImage fi = new FloatImage(imPar.width, imPar.height, 3);
