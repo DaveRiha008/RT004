@@ -20,12 +20,17 @@ namespace rt004
   }
   class Camera
   {
+    double visionAngle;
     Vector3 position = new();
     Vector3 viewVector = new();
-    public Camera(Vector3 position, Vector3 viewVector)
+    Vector3 upVector = Vector3.UnitY;
+    public Camera(Vector3 position, Vector3 viewVector, Vector3 upVector = default, double visionAngle = 120)
     {
       this.position = position;
       this.viewVector = viewVector;
+      this.upVector = upVector;
+      this.visionAngle = visionAngle;
+      this.upVector = upVector;
     }
     public void SetPosition(float x, float y, float z) { position = new Vector3(x, y, z); }
     public void SetPosition(Vector3 vector) { position = vector; }
@@ -44,6 +49,12 @@ namespace rt004
     public void SetViewVectorY(float y) { viewVector.Y = y; }
     public void SetViewVectorZ(float z) { viewVector.Z = z; }
     public Vector3 GetViewVector() { return viewVector; }
+    public void SetUpVector(float x, float y, float z) { upVector = new Vector3(x, y, z); }
+    public void SetUpVector(Vector3 vector) { upVector = vector; }
+    public void SetUpVectorX(float x) { upVector.X = x; }
+    public void SetUpVectorY(float y) { upVector.Y = y; }
+    public void SetUpVectorZ(float z) { upVector.Z = z; }
+    public Vector3 GetUpVector() { return upVector; }
 
     List <Ray> rays = new();
     List <int> rayIndeces = new();

@@ -23,6 +23,11 @@ namespace rt004
           return null;
         }
         string[] splitLine = line.Split('=');
+        if (splitLine[0][0] == '#')
+        {
+          end = false;
+          return null;
+        }
         if (splitLine.Length != 2)
         {
           if (splitLine.Length == 1 && splitLine[0] == "end") end = true;
