@@ -7,6 +7,10 @@ using System.Security.Cryptography;
 
 namespace rt004
 {
+  abstract class Solid
+  {
+    public abstract void GetIntersection(Ray ray, out Vector3? outIntersection, out Vector3? normalVector);
+  }
   static class DistanceCalculator
   {
     static public double GetDistance(Vector3 v1, Vector3 v2)
@@ -44,6 +48,19 @@ namespace rt004
       }
     }
   }
+  static class NormalVectorCalculator
+  {
+    public static Vector3 GetNormal(Vector3 point1, Vector3 point2) 
+    {
+      Vector3 vector = point2 - point1;
+      Vector3 unitY = Vector3.UnitY;
+      Vector3 unitZ = Vector3.UnitZ;
+      if (vector.X != 0 || vector.Z != 0)
+        return Vector3.Cross(vector, unitY);
+      else
+        return Vector3.Cross(vector, unitZ);
+    }
+  }
   class Sphere
   {
     Vector3 position = new();
@@ -54,7 +71,7 @@ namespace rt004
       R = r;
     }
 
-    public Vector3? GetIntersection(Ray ray)
+    public void GetIntersection(Ray ray, out Vector3? outIntersection, out Vector3? outNormalVector)
     {
       const double rayLength = 1000;
       double x0 = ray.position.X;
@@ -106,8 +123,16 @@ namespace rt004
         if (DistanceCalculator.GetDistance(ray.position, intersection1) <= DistanceCalculator.GetDistance(ray.position, intersection2)) intersection = intersection1;
         else intersection = intersection2;
       }
-      if (root1 is not null || root2 is not null) return intersection;
-      else return null;
+      if (root1 is not null || root2 is not null)
+      {
+        outIntersection = intersection;
+        outNormalVector = NormalVectorCalculator.GetNormal(position, intersection);
+      }
+      else
+      {
+        outIntersection = null;
+        outNormalVector = null;
+      }
     }
 
   }
