@@ -71,7 +71,7 @@ namespace rt004
       R = r;
     }
 
-    public void GetIntersection(Ray ray, out Vector3? outIntersection, out Vector3? outNormalVector)
+    public void GetIntersection(Ray ray, out Vector3? outIntersection, out Vector3? outNormalVector/*, out double? outT*/)   //uncomment for T return instead intersection
     {
       const double rayLength = 1000;
       double x0 = ray.position.X;
@@ -104,6 +104,7 @@ namespace rt004
       double C = CFunction();
       double? root1;
       double? root2;
+      double? t = null;
       QuadraticEquationSolver.Solve(A, B, C, out root1, out root2);
       Vector3 intersection1 = new Vector3();
       Vector3 intersection2 = new Vector3();
@@ -112,27 +113,32 @@ namespace rt004
       {
         intersection1 = new Vector3((float)(x0 * (1 - root1) + root1 * x1), (float)(y0 * (1 - root1) + root1 * y1), (float)(z0 * (1 - root1) + root1 * z1));
         intersection = intersection1;
+        t = root1 * rayLength;
       }
       if (root2 is not null)
       {
         intersection2 = new Vector3((float)(x0 * (1 - root2) + root2 * x1), (float)(y0 * (1 - root2) + root2 * y1), (float)(z0 * (1 - root2) + root2 * z1));
         intersection = intersection2;
+        t= root2 * rayLength;
       }
       if (root1 is not null && root2 is not null)
       {
-        if (DistanceCalculator.GetDistance(ray.position, intersection1) <= DistanceCalculator.GetDistance(ray.position, intersection2)) intersection = intersection1;
-        else intersection = intersection2;
+        if (DistanceCalculator.GetDistance(ray.position, intersection1) <= DistanceCalculator.GetDistance(ray.position, intersection2)) { intersection = intersection1; t = root1 * rayLength; }
+        else { intersection = intersection2; t = root2 * rayLength; }
       }
       if (root1 is not null || root2 is not null)
       {
         outIntersection = intersection;
         outNormalVector = NormalVectorCalculator.GetNormal(position, intersection);
+        //outT = t;      //uncomment for T return instead intersection
       }
       else
       {
         outIntersection = null;
         outNormalVector = null;
+        //outT = null;    //uncomment for T return instead intersection
       }
+
     }
 
   }
