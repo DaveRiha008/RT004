@@ -22,8 +22,8 @@
   **cylindrical perspective** etc. You don't need to implement them right away
   but to think about them could be useful...
 * You don't have to use object-oriented design today.
-  Remember that in the near future you will be required to.(see
-  the [step08](../step08)).
+  Remember that in the near future you will be required to (see
+  the [step09](../s09-OOP)).
 
 # Your Documentation
 Use the [separate file DOC.md](DOC.md) to avoid merge conflicts.
