@@ -1,6 +1,7 @@
 ﻿//using System.Numerics;
 #nullable enable
 
+using System;
 using System.Dynamic;
 using System.Numerics;
 using System.Security.Cryptography;
@@ -9,7 +10,7 @@ namespace rt004
 {
   abstract class Solid
   {
-    public abstract void GetIntersection(Ray ray, out Vector3? outIntersection, out Vector3? normalVector);
+    public abstract void GetIntersection(Ray ray, out double? outT);
   }
   static class DistanceCalculator
   {
@@ -61,17 +62,17 @@ namespace rt004
         return Vector3.Cross(vector, unitZ);
     }
   }
-  class Sphere
+  class Sphere:Solid
   {
     Vector3 position = new();
-    double R;
+    double r;
     public Sphere(Vector3 position, double r)
     {
       this.position = position;
-      R = r;
+      this.r = r;
     }
 
-    public void GetIntersection(Ray ray, out Vector3? outIntersection, out Vector3? outNormalVector/*, out double? outT*/)   //uncomment for T return instead intersection
+    public override void GetIntersection(Ray ray/*, out Vector3? outIntersection, out Vector3? outNormalVector*/, out double? outT)   //uncomment for T/Intersection return instead intersection
     {
       const double rayLength = 1000;
       double x0 = ray.position.X;
@@ -97,7 +98,7 @@ namespace rt004
       double CFunction()
       {
         return x0 * x0 - 2 * x0 * xc + xc * xc + y0 * y0 - 2 * y0 * yc + yc * yc +
-                   z0 * z0 - 2 * z0 * zc + zc * zc - R * R;
+                   z0 * z0 - 2 * z0 * zc + zc * zc - r * r;
       }
       double A = AFunction();
       double B = BFunction();
@@ -128,18 +129,112 @@ namespace rt004
       }
       if (root1 is not null || root2 is not null)
       {
-        outIntersection = intersection;
-        outNormalVector = NormalVectorCalculator.GetNormal(position, intersection);
-        //outT = t;      //uncomment for T return instead intersection
+        //outIntersection = intersection;
+        //outNormalVector = NormalVectorCalculator.GetNormal(position, intersection);
+        outT = t;      //uncomment for T return instead intersection
       }
       else
       {
-        outIntersection = null;
-        outNormalVector = null;
-        //outT = null;    //uncomment for T return instead intersection
+        //outIntersection = null;   //uncomment for Intersection return instead of T
+        //outNormalVector = null;
+        outT = null;    //uncomment for T return instead intersection
       }
 
     }
 
   }
+
+  class Cylinder : Solid
+  {
+    Vector3 topCenter;
+    Vector3 bottomCenter;
+    float r;
+    public Cylinder(Vector3 topCenter ,Vector3 bottomCenter, float r)
+    {
+      this.bottomCenter = bottomCenter;
+      this.r = r;
+      this.topCenter = topCenter;
+    }
+
+
+    //Intersection function source: https://gist.github.com/Half/5fba69ba467891a3a1a3d754ea8732d3
+    public override void GetIntersection(Ray ray, out double? outT) 
+    {
+      outT = null;
+
+      // Calculate cylinder bounds for optimization
+      float cxmin, cymin, czmin, cxmax, cymax, czmax;
+
+      if (bottomCenter.Z < topCenter.Z)
+      {
+        czmin = bottomCenter.Z - r;
+        czmax = topCenter.Z + r;
+      }
+      else
+      {
+        czmin = topCenter.Z - r;
+        czmax = bottomCenter.Z + r;
+      }
+
+      if (bottomCenter.Y < topCenter.Y)
+      {
+        cymin = bottomCenter.Y - r;
+        cymax = topCenter.Y + r;
+      }
+      else
+      {
+        cymin = topCenter.Y - r;
+        cymax = bottomCenter.Y + r;
+      }
+
+      if (bottomCenter.X < topCenter.X)
+      {
+        cxmin = bottomCenter.X - r;
+        cxmax = topCenter.X + r;
+      }
+      else
+      {
+        cxmin = topCenter.X - r;
+        cxmax = bottomCenter.X + r;
+      }
+
+      // Line out of bounds?
+      if ((ray.position.Z >= czmax && (ray.position.Z + ray.vector.Z) > czmax)
+          || (ray.position.Z <= czmin && (ray.position.Z + ray.vector.Z) < czmin)
+          || (ray.position.Y >= cymax && (ray.position.Y + ray.vector.Y) > cymax)
+          || (ray.position.Y <= cymin && (ray.position.Y + ray.vector.Y) < cymin)
+          || (ray.position.X >= cxmax && (ray.position.X + ray.vector.X) > cxmax)
+          || (ray.position.X <= cxmin && (ray.position.X + ray.vector.X) < cxmin))
+      {
+        return;
+      }
+
+      Vector3 AB = topCenter - bottomCenter;
+      Vector3 AO = ray.position - bottomCenter;
+      Vector3 AOxAB = Vector3.Cross(AO, AB);
+      Vector3 VxAB = Vector3.Cross(ray.vector, AB);
+      float ab2 = Vector3.Dot(AB, AB);
+      float a = Vector3.Dot(VxAB, VxAB);
+      float b = 2 * Vector3.Dot(VxAB, AOxAB);
+      float c = Vector3.Dot(AOxAB, AOxAB) - (r * r * ab2);
+      float d = b * b - 4f * a * c;
+
+      if (d < 0f)
+      {
+        return;
+      }
+
+      float time = (float)((-b - Math.Sqrt(d)) / (2f * a));
+
+      if (time < 0f)
+      {
+        return;
+      }
+      outT = time;
+    }   
+
+  }
+
 }
+
+
