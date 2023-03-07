@@ -149,7 +149,7 @@ namespace rt004
     Vector3 topCenter;
     Vector3 bottomCenter;
     float r;
-    public Cylinder(Vector3 topCenter ,Vector3 bottomCenter, float r)
+    public Cylinder(Vector3 bottomCenter ,Vector3 topCenter, float r)
     {
       this.bottomCenter = bottomCenter;
       this.r = r;
@@ -161,7 +161,7 @@ namespace rt004
     public override void GetIntersection(Ray ray, out double? outT) 
     {
       outT = null;
-
+      const int rayLength = 1000;
       // Calculate cylinder bounds for optimization
       float cxmin, cymin, czmin, cxmax, cymax, czmax;
 
@@ -198,13 +198,15 @@ namespace rt004
         cxmax = bottomCenter.X + r;
       }
 
+      Vector3 rayDirection = ray.vector*rayLength;
+
       // Line out of bounds?
-      if ((ray.position.Z >= czmax && (ray.position.Z + ray.vector.Z) > czmax)
-          || (ray.position.Z <= czmin && (ray.position.Z + ray.vector.Z) < czmin)
-          || (ray.position.Y >= cymax && (ray.position.Y + ray.vector.Y) > cymax)
-          || (ray.position.Y <= cymin && (ray.position.Y + ray.vector.Y) < cymin)
-          || (ray.position.X >= cxmax && (ray.position.X + ray.vector.X) > cxmax)
-          || (ray.position.X <= cxmin && (ray.position.X + ray.vector.X) < cxmin))
+      if ((ray.position.Z >= czmax && (ray.position.Z + rayDirection.Z) > czmax)
+          || (ray.position.Z <= czmin && (ray.position.Z + rayDirection.Z) < czmin)
+          || (ray.position.Y >= cymax && (ray.position.Y + rayDirection.Y) > cymax)
+          || (ray.position.Y <= cymin && (ray.position.Y + rayDirection.Y) < cymin)
+          || (ray.position.X >= cxmax && (ray.position.X + rayDirection.X) > cxmax)
+          || (ray.position.X <= cxmin && (ray.position.X + rayDirection.X) < cxmin))
       {
         return;
       }
@@ -224,13 +226,20 @@ namespace rt004
         return;
       }
 
-      float time = (float)((-b - Math.Sqrt(d)) / (2f * a));
+      float time1 = (float)((-b + Math.Sqrt(d)) / (2f * a));
+      float time2 = (float)((-b - Math.Sqrt(d)) / (2f * a));
 
-      if (time < 0f)
+      if (time1 < 0f && time2 < 0f)
       {
         return;
       }
-      outT = time;
+      if (time1 > 0f) {
+        if (time1 <= time2) outT = time1;
+        else if (time2 > 0f) outT = time2;
+        else outT = time1;
+      }
+      else if (time2 > 0f)
+        outT = time2;
     }   
 
   }

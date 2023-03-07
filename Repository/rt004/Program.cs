@@ -111,9 +111,11 @@ namespace rt004
       Sphere sphere2 = new Sphere(new Vector3(6,0,0), 2);
       Cylinder cylinder1 = new Cylinder(new Vector3(8,0,0), new Vector3(8,4,0), 2);
       Camera camera = new Camera(new Vector3(0, 0, 0), new Vector3(1, 0, 0));
+      double? t;
       int rayIndex = camera.CreateRay(camera.GetViewVector());
-      sphere1.GetIntersection(camera.GetRay(rayIndex), out _);
-      sphere2.GetIntersection(camera.GetRay(rayIndex), out _);
+      sphere1.GetIntersection(camera.GetRay(rayIndex), out t);
+      sphere2.GetIntersection(camera.GetRay(rayIndex), out t);
+      cylinder1.GetIntersection(camera.GetRay(rayIndex), out t);
       // HDR image.
 
       FloatImage fi = new FloatImage(imPar.width, imPar.height, 3);
