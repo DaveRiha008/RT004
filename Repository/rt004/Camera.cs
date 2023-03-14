@@ -18,9 +18,9 @@ namespace rt004
       this.index = index;
     }
 
-    public Vector3 PositionAfterT(double t)
+    public Vector3 PositionAfterT(float t)
     {
-      return this.position + this.vector * (float)t;
+      return this.position + this.vector * t;
     }
   }
   class Camera

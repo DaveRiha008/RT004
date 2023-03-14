@@ -13,6 +13,8 @@ namespace rt004
 {
   abstract class Solid
   {
+    public Vector3 color;
+    public Material material;
     public abstract void GetIntersection(Ray ray, out double? outT);
   }
   static class DistanceCalculator
@@ -54,15 +56,11 @@ namespace rt004
   }
   static class NormalVectorCalculator
   {
-    public static Vector3 GetNormal(Vector3 point1, Vector3 point2) 
+    public static Vector3 GetVectorBetween2Points(Vector3 point1, Vector3 point2)
     {
-      Vector3 vector = point2 - point1;
-      Vector3 unitY = Vector3.UnitY;
-      Vector3 unitZ = Vector3.UnitZ;
-      if (vector.X != 0 || vector.Z != 0)
-        return Vector3.Cross(vector, unitY);
-      else
-        return Vector3.Cross(vector, unitZ);
+      Vector3 outVec = new Vector3(point2.X - point1.X, point2.Y - point1.Y, point2.Z - point1.Z);
+      outVec = Vector3.Normalize(outVec);
+      return outVec;
     }
   }
 
@@ -70,10 +68,12 @@ namespace rt004
   {
     Vector3 position = new();
     Vector3 normal = new();
-    public Plane(Vector3 position, Vector3 normal)
+    public Plane(Vector3 position, Vector3 normal, Vector3 color, Material material)
     {
       this.position = position;
       this.normal = normal;
+      this.color = color;
+      this.material = material;
     }
 
     public override void GetIntersection(Ray ray, out double? outT)
@@ -86,63 +86,107 @@ namespace rt004
       Vector3 lineVec = ray.vector;
       outT = null;
 
-      //calculate the distance between the linePoint and the line-plane intersection point
+      //calculate the distance between the linePoint and the line-plane point1 point
       a = Vector3.Dot(planePoint - linePoint, planeNormal);
       b = Vector3.Dot(lineVec, planeNormal);
       if (b == 0 && a == 0) outT = 1; //ray is going alongside plane - any T is true
       else if (b != 0) outT = a / b;
       return;
     }
+
+    public Vector3 GetColor(Vector3 viewPoint, Vector3 intersectionPoint, LightSource light, bool isAmbient = false)
+    {
+      if (isAmbient) { return color * material.ambient; }
+      Vector3 lightVector = NormalVectorCalculator.GetVectorBetween2Points(intersectionPoint, light.position);
+      Vector3 difuseComponent = color;
+      difuseComponent *= light.intensity;
+      difuseComponent *= material.diffuse;
+      difuseComponent *= Math.Max(0, Vector3.Dot(normal, lightVector));
+
+      Vector3 viewPointVec = NormalVectorCalculator.GetVectorBetween2Points(viewPoint, intersectionPoint);
+      Vector3 halfwayVec = viewPointVec + lightVector;
+      halfwayVec = Vector3.Normalize(halfwayVec);
+      Vector3 reflectionComponent = light.color;
+      reflectionComponent *= light.intensity;
+      reflectionComponent *= material.reflection;
+      reflectionComponent *= Math.Max((float)Math.Pow(Vector3.Dot(normal, halfwayVec), material.reflectionSize), 0);
+
+      Vector3 ambientComponent = color * material.ambient;
+      return difuseComponent + ambientComponent + reflectionComponent;
+    }
   }
 
   class Sphere:Solid
   {
     Vector3 position = new();
-    double r;
-    public Sphere(Vector3 position, double r)
+    float r;
+    public Sphere(Vector3 position, float r, Vector3 color, Material material)
     {
       this.position = position;
       this.r = r;
+      this.color = color;
+      this.material = material;
     }
 
-    //source: https://gamedev.stackexchange.com/questions/96459/fast-ray-sphere-collision-code - DMGregory
     public override void GetIntersection(Ray ray, out double? outT)
     {
       outT = null;
-      Vector3 s = ray.position;
-      Vector3 c = position;
-      Vector3 p = s - c;
-      Vector3 d = ray.vector;
+      float cx = position.X;
+      float cy = position.Y;
+      float cz = position.Z;
+      float dx = ray.vector.X;
+      float dy = ray.vector.Y;
+      float dz = ray.vector.Z;
+      float x0 = ray.position.X;
+      float y0 = ray.position.Y;
+      float z0 = ray.position.Z;
 
-      double rSquared = r * r;
-      float p_d = Vector3.Dot(p, d);
+      float a = dx * dx + dy * dy + dz * dz;
+      float b = 2 * dx * (x0 - cx) + 2 * dy * (y0 - cy) + 2 * dz * (z0 - cz);
+      float c = cx * cx + cy * cy + cz * cz + x0 * x0 + y0 * y0 + z0 * z0 +
+                  -2 * (cx * x0 + cy * y0 + cz * z0) - r*r;
+      
+      float d = b * b - 4 * a * c;
 
-      // The sphere is behind or surrounding the start point.
-      if (p_d > 0 || Vector3.Dot(p, p) < rSquared)
+      if (d < 0) return;
+      if (d == 0)
+      {
+        outT = (-b) / (2 * a);
         return;
+      }
 
-      // Flatten p into the plane passing through c perpendicular to the ray.
-      // This gives the closest approach of the ray to the center.
-      Vector3 a = p - p_d * d;
+      outT = (-b - Math.Sqrt(d)) / (2 * a);
+      return;
 
-      float aSquared = Vector3.Dot(a, a);
+    }
 
-      // Closest approach is outside the sphere.
-      if (aSquared > rSquared)
-        return;
+    Vector3 GetNormal(Vector3 intersectionPoint)
+    {
+      Vector3 normal = new Vector3((intersectionPoint.X-position.X)/r, (intersectionPoint.Y-position.Y)/r, (intersectionPoint.Z-position.Z)/r);
+      normal = Vector3.Normalize(normal);
+      return normal;
+    }
 
-      // Calculate distance from plane where ray enters/exits the sphere.    
-      float h = (float)Math.Sqrt(rSquared - aSquared);
-      outT = h;
+    public Vector3 GetColor(Vector3 viewPoint ,Vector3 intersectionPoint, LightSource light, bool isAmbient = false)
+    {
+      if(isAmbient) { return color * material.ambient; }
+      Vector3 normal = GetNormal(intersectionPoint);
+      Vector3 lightVector = NormalVectorCalculator.GetVectorBetween2Points(intersectionPoint, light.position);
+      Vector3 difuseComponent = color;
+      difuseComponent *= light.intensity;
+      difuseComponent *= material.diffuse;
+      difuseComponent *= Math.Max(0,Vector3.Dot(normal, lightVector));
 
-      // Calculate intersection point relative to sphere center.
-      //Vector3 i = a - h * d;
+      Vector3 viewPointVec = NormalVectorCalculator.GetVectorBetween2Points(viewPoint, intersectionPoint);
+      Vector3 halfwayVec = viewPointVec + lightVector;
+      halfwayVec = Vector3.Normalize(halfwayVec);
+      Vector3 reflectionComponent = light.color;
+      reflectionComponent *= light.intensity;
+      reflectionComponent *= material.reflection;
+      reflectionComponent *= Math.Max((float)Math.Pow(Vector3.Dot(normal, halfwayVec), material.reflectionSize),0);
 
-      //Vector3 intersection = c + i;
-      //Vector3 normal = i / (float)r;
-      // We've taken a shortcut here to avoid a second square root.
-      // Note numerical errors can make the normal have length slightly different from 1.
-      // If you need higher precision, you may need to perform a conventional normalization.
+      Vector3 ambientComponent = color * material.ambient;
+      return difuseComponent+ambientComponent+reflectionComponent;
     }
   }
 }
