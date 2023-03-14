@@ -58,32 +58,31 @@ namespace rt004
 
     static void CreateHDRImage(FloatImage fi, ImageParameters imPar)
     {
-      Sphere sphere1 = new Sphere(new Vector3(0, 500, 50), 20);
-      Sphere sphere2 = new Sphere(new Vector3(50, 400, 50), 20);
-      Plane plane1 = new Plane(new Vector3(50, 50, 50), new Vector3(1,0,1));
-      Cylinder cylinder1 = new Cylinder(new Vector3(50, 50, 30), new Vector3(50, 52, 30), 10);
+      Sphere sphere1 = new Sphere(new Vector3(-0.5f, 0, 1), 0.1f);
+      //Sphere sphere2 = new Sphere(new Vector3(0, 0, 50), 50);
+      Plane plane1 = new Plane(new Vector3(-0.01f, 50, 0.01f), new Vector3(1,0,1));
       Camera camera = new Camera(new Vector3(0, 0, 0), new Vector3(0, 0, 1), new Vector3(0,1,0));
       double? t;
       int rayIndex;
-      for (int i = -imPar.width/2; i < imPar.width/2; i++)
+      for (int i = 0; i < imPar.width; i++)
       {
-        for (int j = -imPar.height/2; j < imPar.height/2; j++)
+        for (int j = 0; j < imPar.height; j++)
         {
-          if (i >0)
+          if (i >= 0 && j>=0)
             t = 0;
-          camera.SetPositionX(i);
-          camera.SetPositionY(j);
-          rayIndex = camera.CreateRay(new Vector3(i,j,20));
+          //camera.SetPositionX(i); camera.SetPositionY(j); // linear projection
+
+          float normalizedX = (2.0f * i) / imPar.width - 1f;  //normalize for x and y to go from -1 to +1
+          float normalizedY = (-2.0f * j) / imPar.height + 1f;
+          rayIndex = camera.CreateRay(normalizedX, normalizedY); 
           float[] color = new float[3] { 1, 1, 1 };
           plane1.GetIntersection(camera.GetRay(rayIndex), out t);
-          if (t is not null && t>0) color = new float[3] { 1, 1, 0 };
+          if (t is not null && t > 0) color = new float[3] { 1, 1, 0 };
           sphere1.GetIntersection(camera.GetRay(rayIndex), out t);
-          if (t is not null && t>0) color = new float[3] { 1, 0, 0 };
-          sphere2.GetIntersection(camera.GetRay(rayIndex), out t);
-          if (t is not null && t > 0) color = new float[3] { 0.5f, 0, 0 };
-          cylinder1.GetIntersection(camera.GetRay(rayIndex), out t);
-          if (t is not null && t > 0) color = new float[3] { 0, 1, 0 };
-          fi.PutPixel(i+imPar.width/2, j+imPar.height/2, color);
+          if (t is not null && t > 0) color = new float[3] { 1, 0, 0 };
+          //sphere2.GetIntersection(camera.GetRay(rayIndex), out t);
+          //if (t is not null && t > 0) color = new float[3] { 0.5f, 0, 0 };
+          fi.PutPixel(i, j, color);
           camera.RemoveRay(rayIndex);
         }
       }
@@ -125,16 +124,6 @@ namespace rt004
       if (configOptions.TryGetValue("width", out _)) int.TryParse(configOptions["width"], out imPar.width);
       if (configOptions.TryGetValue("height", out _)) int.TryParse(configOptions["height"], out imPar.height);
       if (configOptions.TryGetValue("ratio", out _)) int.TryParse(configOptions["ratio"], out imPar.ratio);
-
-      Sphere sphere1 = new Sphere(new Vector3(4,0,0), 2);
-      Sphere sphere2 = new Sphere(new Vector3(6,0,0), 2);
-      Cylinder cylinder1 = new Cylinder(new Vector3(8,1,1), new Vector3(8,4,1), 2);
-      Camera camera = new Camera(new Vector3(0, 0, 0), new Vector3(1, 0, 0));
-      double? t;
-      int rayIndex = camera.CreateRay(camera.GetViewVector());
-      sphere1.GetIntersection(camera.GetRay(rayIndex), out t);
-      sphere2.GetIntersection(camera.GetRay(rayIndex), out t);
-      cylinder1.GetIntersection(camera.GetRay(rayIndex), out t);
       // HDR image.
 
       FloatImage fi = new FloatImage(imPar.width, imPar.height, 3);

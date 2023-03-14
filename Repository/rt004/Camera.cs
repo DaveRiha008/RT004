@@ -25,17 +25,31 @@ namespace rt004
   }
   class Camera
   {
-    public double visionAngle;
+    public double aspectRatio;
+    public double fov;
+    Vector3 right = new();
     Vector3 position = new();
-    Vector3 viewVector = new();
-    Vector3 upVector = Vector3.UnitY;
-    public Camera(Vector3 position, Vector3 viewVector, Vector3 upVector = default, double visionAngle = 120)
+    Vector3 forward = new();
+    Vector3 up = Vector3.UnitY;
+    float width;
+    float h;
+    public Camera(Vector3 position, Vector3 viewVector, Vector3 upVector = default, double aspectRatio = 16d/9d, double visionAngle = 25*Math.PI/180)
     {
       this.position = position;
-      this.viewVector = viewVector;
-      this.upVector = upVector;
-      this.visionAngle = visionAngle;
-      this.upVector = upVector;
+      this.forward = viewVector;
+      this.up = upVector;
+      this.fov = visionAngle;
+      this.aspectRatio = aspectRatio;
+
+      forward = viewVector;
+      forward = Vector3.Normalize(forward);
+      up = upVector;
+      up = Vector3.Normalize(up);
+      right = Vector3.Cross(forward, up);
+      right = Vector3.Normalize(right);
+
+      h = (float)Math.Tan(fov);
+      width = h * (float)aspectRatio;
     }
     public void SetPosition(float x, float y, float z) { position = new Vector3(x, y, z); }
     public void SetPosition(Vector3 vector) { position = vector; }
@@ -48,35 +62,25 @@ namespace rt004
 
     public Vector3 GetPosition() { return position; }
 
-    public void SetViewVector(float x, float y, float z) { viewVector = new Vector3(x, y, z); }
-    public void SetViewVector(Vector3 vector) { viewVector = vector; }
-    public void SetViewVectorX(float x) { viewVector.X = x; }
-    public void SetViewVectorY(float y) { viewVector.Y = y; }
-    public void SetViewVectorZ(float z) { viewVector.Z = z; }
-    public Vector3 GetViewVector() { return viewVector; }
-    public void SetUpVector(float x, float y, float z) { upVector = new Vector3(x, y, z); }
-    public void SetUpVector(Vector3 vector) { upVector = vector; }
-    public void SetUpVectorX(float x) { upVector.X = x; }
-    public void SetUpVectorY(float y) { upVector.Y = y; }
-    public void SetUpVectorZ(float z) { upVector.Z = z; }
-    public Vector3 GetUpVector() { return upVector; }
+    public void SetViewVector(float x, float y, float z) { forward = new Vector3(x, y, z); }
+    public void SetViewVector(Vector3 vector) { forward = vector; }
+    public void SetViewVectorX(float x) { forward.X = x; }
+    public void SetViewVectorY(float y) { forward.Y = y; }
+    public void SetViewVectorZ(float z) { forward.Z = z; }
+    public Vector3 GetViewVector() { return forward; }
+    public void SetUpVector(float x, float y, float z) { up = new Vector3(x, y, z); }
+    public void SetUpVector(Vector3 vector) { up = vector; }
+    public void SetUpVectorX(float x) { up.X = x; }
+    public void SetUpVectorY(float y) { up.Y = y; }
+    public void SetUpVectorZ(float z) { up.Z = z; }
+    public Vector3 GetUpVector() { return up; }
 
     List <Ray> rays = new();
     Dictionary <int, Ray> rayIndeces = new();
     int currentIndex = 0;
-    public int CreateRay(float x, float y, float z)
+    public int CreateRay(float x, float y)
     {
-      Vector3 rayVec = new Vector3(x, y, z) - position;
-      rayVec = Vector3.Normalize(rayVec);
-      Ray newRay = new Ray(position, rayVec, currentIndex);
-      rays.Add(newRay);
-      rayIndeces.Add(currentIndex, newRay);
-      currentIndex++;
-      return currentIndex - 1;
-    }
-    public int CreateRay(Vector3 vector)
-    {
-      Vector3 rayVec = vector - position;
+      Vector3 rayVec = forward + x * width * right + y * h * up;
       rayVec = Vector3.Normalize(rayVec);
       Ray newRay = new Ray(position, rayVec, currentIndex);
       rays.Add(newRay);
