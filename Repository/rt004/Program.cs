@@ -58,15 +58,33 @@ namespace rt004
 
     static void CreateHDRImage(FloatImage fi, ImageParameters imPar)
     {
-      for (int i = 0; i < imPar.width; i++)
+      Sphere sphere1 = new Sphere(new Vector3(0, 500, 50), 20);
+      Sphere sphere2 = new Sphere(new Vector3(50, 400, 50), 20);
+      Plane plane1 = new Plane(new Vector3(50, 50, 50), new Vector3(1,0,1));
+      Cylinder cylinder1 = new Cylinder(new Vector3(50, 50, 30), new Vector3(50, 52, 30), 10);
+      Camera camera = new Camera(new Vector3(0, 0, 0), new Vector3(0, 0, 1), new Vector3(0,1,0));
+      double? t;
+      int rayIndex;
+      for (int i = -imPar.width/2; i < imPar.width/2; i++)
       {
-        for (int j = 0; j < imPar.height; j++)
+        for (int j = -imPar.height/2; j < imPar.height/2; j++)
         {
-          float red = i / (float)imPar.width;
-          float green = j / (float)imPar.height;
-          float blue = (red + green) / imPar.ratio;
-          float[] color = new float[3] { red, green, blue };
-          fi.PutPixel(i, j, color);
+          if (i >0)
+            t = 0;
+          camera.SetPositionX(i);
+          camera.SetPositionY(j);
+          rayIndex = camera.CreateRay(new Vector3(i,j,20));
+          float[] color = new float[3] { 1, 1, 1 };
+          plane1.GetIntersection(camera.GetRay(rayIndex), out t);
+          if (t is not null && t>0) color = new float[3] { 1, 1, 0 };
+          sphere1.GetIntersection(camera.GetRay(rayIndex), out t);
+          if (t is not null && t>0) color = new float[3] { 1, 0, 0 };
+          sphere2.GetIntersection(camera.GetRay(rayIndex), out t);
+          if (t is not null && t > 0) color = new float[3] { 0.5f, 0, 0 };
+          cylinder1.GetIntersection(camera.GetRay(rayIndex), out t);
+          if (t is not null && t > 0) color = new float[3] { 0, 1, 0 };
+          fi.PutPixel(i+imPar.width/2, j+imPar.height/2, color);
+          camera.RemoveRay(rayIndex);
         }
       }
     }
@@ -88,8 +106,9 @@ namespace rt004
       // TODO: parse command-line arguments and/or your config file.
       ImageParameters imPar = new ImageParameters(600, 450, 2);
       string fileName = "demo.pfm";
-      Console.WriteLine("Input your config file name (path): ");
-      string? configFileName = Console.ReadLine();
+      //Console.WriteLine("Input your config file name (path): ");
+      //string? configFileName = Console.ReadLine();
+      string? configFileName = "config.txt";
       StreamReader configStream = new StreamReader(Console.OpenStandardInput());
       try
       {
@@ -109,7 +128,7 @@ namespace rt004
 
       Sphere sphere1 = new Sphere(new Vector3(4,0,0), 2);
       Sphere sphere2 = new Sphere(new Vector3(6,0,0), 2);
-      Cylinder cylinder1 = new Cylinder(new Vector3(8,0,0), new Vector3(8,4,0), 2);
+      Cylinder cylinder1 = new Cylinder(new Vector3(8,1,1), new Vector3(8,4,1), 2);
       Camera camera = new Camera(new Vector3(0, 0, 0), new Vector3(1, 0, 0));
       double? t;
       int rayIndex = camera.CreateRay(camera.GetViewVector());

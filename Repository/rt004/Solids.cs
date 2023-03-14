@@ -1,9 +1,12 @@
 ﻿//using System.Numerics;
 #nullable enable
 
+using Microsoft.VisualBasic;
 using System;
+using System.Drawing;
 using System.Dynamic;
 using System.Numerics;
+using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 
 namespace rt004
@@ -62,6 +65,36 @@ namespace rt004
         return Vector3.Cross(vector, unitZ);
     }
   }
+
+  class Plane : Solid
+  {
+    Vector3 position = new();
+    Vector3 normal = new();
+    public Plane(Vector3 position, Vector3 normal)
+    {
+      this.position = position;
+      this.normal = normal;
+    }
+
+    public override void GetIntersection(Ray ray, out double? outT)
+    {
+      float a;
+      float b;
+      Vector3 planePoint = position;
+      Vector3 planeNormal = normal;
+      Vector3 linePoint = ray.position;
+      Vector3 lineVec = ray.vector;
+      outT = null;
+
+      //calculate the distance between the linePoint and the line-plane intersection point
+      a = Vector3.Dot(planePoint - linePoint, planeNormal);
+      b = Vector3.Dot(lineVec, planeNormal);
+      if (b == 0 && a == 0) outT = 1; //ray is going alongside plane - any T is true
+      else if (b != 0) outT = a / b;
+      return;
+    }
+  }
+
   class Sphere:Solid
   {
     Vector3 position = new();
@@ -72,76 +105,45 @@ namespace rt004
       this.r = r;
     }
 
-    public override void GetIntersection(Ray ray/*, out Vector3? outIntersection, out Vector3? outNormalVector*/, out double? outT)   //uncomment for T/Intersection return instead intersection
+    //source: https://gamedev.stackexchange.com/questions/96459/fast-ray-sphere-collision-code - DMGregory
+    public override void GetIntersection(Ray ray, out double? outT)
     {
-      const double rayLength = 1000;
-      double x0 = ray.position.X;
-      double y0 = ray.position.Y;
-      double z0 = ray.position.Z;
-      double x1 = ray.position.X+ray.vector.X*rayLength;
-      double y1 = ray.position.Y+ray.vector.Y*rayLength;
-      double z1 = ray.position.Z+ray.vector.Z*rayLength;
-      double distX = x1 - x0;
-      double distY = y1 - y0;
-      double distZ = z1 - z0;
-      double xc = position.X;
-      double yc = position.Y;
-      double zc = position.Z;
-      double AFunction()
-      {
-        return distX * distX + distY * distY + distZ * distZ;
-      }
-      double BFunction()
-      {
-        return 2.0 * (x0 * distX + y0 * distY + z0 * distZ - distX * xc - distY * yc - distZ * zc);
-      }
-      double CFunction()
-      {
-        return x0 * x0 - 2 * x0 * xc + xc * xc + y0 * y0 - 2 * y0 * yc + yc * yc +
-                   z0 * z0 - 2 * z0 * zc + zc * zc - r * r;
-      }
-      double A = AFunction();
-      double B = BFunction();
-      double C = CFunction();
-      double? root1;
-      double? root2;
-      double? t = null;
-      QuadraticEquationSolver.Solve(A, B, C, out root1, out root2);
-      Vector3 intersection1 = new Vector3();
-      Vector3 intersection2 = new Vector3();
-      Vector3 intersection = new Vector3();
-      if (root1 is not null)
-      {
-        intersection1 = new Vector3((float)(x0 * (1 - root1) + root1 * x1), (float)(y0 * (1 - root1) + root1 * y1), (float)(z0 * (1 - root1) + root1 * z1));
-        intersection = intersection1;
-        t = root1 * rayLength;
-      }
-      if (root2 is not null)
-      {
-        intersection2 = new Vector3((float)(x0 * (1 - root2) + root2 * x1), (float)(y0 * (1 - root2) + root2 * y1), (float)(z0 * (1 - root2) + root2 * z1));
-        intersection = intersection2;
-        t= root2 * rayLength;
-      }
-      if (root1 is not null && root2 is not null)
-      {
-        if (DistanceCalculator.GetDistance(ray.position, intersection1) <= DistanceCalculator.GetDistance(ray.position, intersection2)) { intersection = intersection1; t = root1 * rayLength; }
-        else { intersection = intersection2; t = root2 * rayLength; }
-      }
-      if (root1 is not null || root2 is not null)
-      {
-        //outIntersection = intersection;
-        //outNormalVector = NormalVectorCalculator.GetNormal(position, intersection);
-        outT = t;      //uncomment for T return instead intersection
-      }
-      else
-      {
-        //outIntersection = null;   //uncomment for Intersection return instead of T
-        //outNormalVector = null;
-        outT = null;    //uncomment for T return instead intersection
-      }
+      outT = null;
+      Vector3 s = ray.position;
+      Vector3 c = position;
+      Vector3 p = s - c;
+      Vector3 d = ray.vector;
 
+      double rSquared = r * r;
+      float p_d = Vector3.Dot(p, d);
+
+      // The sphere is behind or surrounding the start point.
+      if (p_d > 0 || Vector3.Dot(p, p) < rSquared)
+        return;
+
+      // Flatten p into the plane passing through c perpendicular to the ray.
+      // This gives the closest approach of the ray to the center.
+      Vector3 a = p - p_d * d;
+
+      float aSquared = Vector3.Dot(a, a);
+
+      // Closest approach is outside the sphere.
+      if (aSquared > rSquared)
+        return;
+
+      // Calculate distance from plane where ray enters/exits the sphere.    
+      float h = (float)Math.Sqrt(rSquared - aSquared);
+      outT = h;
+
+      // Calculate intersection point relative to sphere center.
+      //Vector3 i = a - h * d;
+
+      //Vector3 intersection = c + i;
+      //Vector3 normal = i / (float)r;
+      // We've taken a shortcut here to avoid a second square root.
+      // Note numerical errors can make the normal have length slightly different from 1.
+      // If you need higher precision, you may need to perform a conventional normalization.
     }
-
   }
 
   class Cylinder : Solid
@@ -157,7 +159,7 @@ namespace rt004
     }
 
 
-    //Intersection function source: https://gist.github.com/Half/5fba69ba467891a3a1a3d754ea8732d3
+    //Cylinder intersection function source: https://gist.github.com/Half/5fba69ba467891a3a1a3d754ea8732d3
     public override void GetIntersection(Ray ray, out double? outT) 
     {
       outT = null;
@@ -233,13 +235,18 @@ namespace rt004
       {
         return;
       }
-      if (time1 > 0f) {
+      if (time1 >= 0f)
+      {
         if (time1 <= time2) outT = time1;
-        else if (time2 > 0f) outT = time2;
+        else if (time2 >= 0f) outT = time2;
         else outT = time1;
       }
-      else if (time2 > 0f)
+      else if (time2 >= 0f)
         outT = time2;
+      //if(time >= 0f)
+      //{
+      //  outT =time;
+      //}
     }   
 
   }

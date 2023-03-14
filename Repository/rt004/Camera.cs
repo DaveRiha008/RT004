@@ -17,10 +17,15 @@ namespace rt004
       this.vector = vector;
       this.index = index;
     }
+
+    public Vector3 PositionAfterT(double t)
+    {
+      return this.position + this.vector * (float)t;
+    }
   }
   class Camera
   {
-    double visionAngle;
+    public double visionAngle;
     Vector3 position = new();
     Vector3 viewVector = new();
     Vector3 upVector = Vector3.UnitY;
@@ -57,31 +62,37 @@ namespace rt004
     public Vector3 GetUpVector() { return upVector; }
 
     List <Ray> rays = new();
-    List <int> rayIndeces = new();
+    Dictionary <int, Ray> rayIndeces = new();
     int currentIndex = 0;
     public int CreateRay(float x, float y, float z)
     {
-      rays.Add(new Ray(position, new Vector3(x, y, z), currentIndex));
-      rayIndeces.Add(currentIndex);
+      Vector3 rayVec = new Vector3(x, y, z) - position;
+      rayVec = Vector3.Normalize(rayVec);
+      Ray newRay = new Ray(position, rayVec, currentIndex);
+      rays.Add(newRay);
+      rayIndeces.Add(currentIndex, newRay);
       currentIndex++;
       return currentIndex - 1;
     }
     public int CreateRay(Vector3 vector)
     {
-      rays.Add(new Ray(position, vector, currentIndex));
-      rayIndeces.Add(currentIndex);
+      Vector3 rayVec = vector - position;
+      rayVec = Vector3.Normalize(rayVec);
+      Ray newRay = new Ray(position, rayVec, currentIndex);
+      rays.Add(newRay);
+      rayIndeces.Add(currentIndex, newRay);
       currentIndex++;
       return currentIndex - 1;
     }
 
     public Ray GetRay(int index)
     {
-      return rays[rayIndeces.IndexOf(index)];
+      return rayIndeces[index];
     }
 
     public void RemoveRay(int index)
     {
-      rays.RemoveAt(rayIndeces.IndexOf(index));
+      rays.Remove(rayIndeces[index]);
       rayIndeces.Remove(index);
       return;
     }
