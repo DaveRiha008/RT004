@@ -23,8 +23,8 @@ namespace rt004
     public float reflection;
     public float ambient;
     public float reflectionSize;
-    const float diffuseBase = 0.5f;
-    const float reflectionBase = 0.45f;
+    const float diffuseBase = 0.4f;
+    const float reflectionBase = 0.55f;
     const float ambientBase = 0.05f;
     const float reflSizeBase = 155f;
     public Material()

@@ -42,14 +42,23 @@ namespace rt004
       this.aspectRatio = aspectRatio;
 
       forward = viewVector;
-      forward = Vector3.Normalize(forward);
       up = upVector;
-      up = Vector3.Normalize(up);
-      right = Vector3.Cross(forward, up);
-      right = Vector3.Normalize(right);
+      SetRightVec();
+      NormalizeAll();
 
       h = (float)Math.Tan(fov);
       width = h * (float)aspectRatio;
+    }
+    void SetRightVec()
+    {
+      right = Vector3.Cross(forward, up);
+    }
+
+    void NormalizeAll()
+    {
+      right = Vector3.Normalize(right);
+      forward = Vector3.Normalize(forward);
+      up = Vector3.Normalize(up);
     }
     public void SetPosition(float x, float y, float z) { position = new Vector3(x, y, z); }
     public void SetPosition(Vector3 vector) { position = vector; }
@@ -62,17 +71,17 @@ namespace rt004
 
     public Vector3 GetPosition() { return position; }
 
-    public void SetViewVector(float x, float y, float z) { forward = new Vector3(x, y, z); }
-    public void SetViewVector(Vector3 vector) { forward = vector; }
-    public void SetViewVectorX(float x) { forward.X = x; }
-    public void SetViewVectorY(float y) { forward.Y = y; }
-    public void SetViewVectorZ(float z) { forward.Z = z; }
+    public void SetViewVector(float x, float y, float z) { forward = new Vector3(x, y, z); SetRightVec(); NormalizeAll(); }
+    public void SetViewVector(Vector3 vector) { forward = vector; SetRightVec(); NormalizeAll(); }
+    public void SetViewVectorX(float x) { forward.X = x; SetRightVec(); NormalizeAll(); }
+    public void SetViewVectorY(float y) { forward.Y = y; SetRightVec(); NormalizeAll(); }
+    public void SetViewVectorZ(float z) { forward.Z = z; SetRightVec(); NormalizeAll(); }
     public Vector3 GetViewVector() { return forward; }
-    public void SetUpVector(float x, float y, float z) { up = new Vector3(x, y, z); }
-    public void SetUpVector(Vector3 vector) { up = vector; }
-    public void SetUpVectorX(float x) { up.X = x; }
-    public void SetUpVectorY(float y) { up.Y = y; }
-    public void SetUpVectorZ(float z) { up.Z = z; }
+    public void SetUpVector(float x, float y, float z) { up = new Vector3(x, y, z); SetRightVec(); NormalizeAll(); }
+    public void SetUpVector(Vector3 vector) { up = vector; SetRightVec(); NormalizeAll(); }
+    public void SetUpVectorX(float x) { up.X = x; SetRightVec(); NormalizeAll(); }
+    public void SetUpVectorY(float y) { up.Y = y; SetRightVec(); NormalizeAll(); }
+    public void SetUpVectorZ(float z) { up.Z = z; SetRightVec(); NormalizeAll(); }
     public Vector3 GetUpVector() { return up; }
 
     List <Ray> rays = new();
