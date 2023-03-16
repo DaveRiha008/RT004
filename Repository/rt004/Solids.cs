@@ -11,6 +11,49 @@ using System.Security.Cryptography;
 
 namespace rt004
 {
+  class AllSolids
+  {
+    Dictionary<int, Solid> solids = new();
+    int currentIndex = 0;
+    public int AddSolid(Solid solid)
+    {
+      solids.Add(currentIndex, solid);
+      currentIndex++;
+      return currentIndex-1;
+    }
+
+    public void RemoveSolid(int index)
+    {
+      solids.Remove(index);
+    }
+
+    public void GetClosestIntersection(Ray ray, out double? outT, out Solid? outSolid)
+    {
+      outT = null;
+      outSolid = null;
+
+      foreach(Solid solid in solids.Values)
+      {
+        double? t;
+        solid.GetIntersection(ray, out t);
+        if (t is not null && t > 0)
+        {
+          if (outT is null)
+          {
+            outT = t;
+            outSolid = solid;
+          }
+          else if (t < outT)
+          {
+            outT = t;
+            outSolid = solid;
+          }
+        }
+      }
+
+
+    }
+  }
   abstract class Solid
   {
     public Vector3 color;

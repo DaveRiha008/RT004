@@ -58,13 +58,12 @@ namespace rt004
 
     static void CreateHDRImage(FloatImage fi, ImageParameters imPar)
     {
-      Sphere sphere1 = new Sphere(new Vector3(0.4f, 0.1f, 1.8f), 0.1f, new Vector3(0.5f, 0.5f, 0), new Material());
+      AllSolids solids = new AllSolids();
+      solids.AddSolid(new Sphere(new Vector3(0.4f, 0.4f, 1.8f), 0.1f, new Vector3(0.5f, 0.5f, 0), new Material()));
+      solids.AddSolid(new Sphere(new Vector3(0.4f, 0.1f, 1f), 0.1f, new Vector3(1f, 0f, 0), new Material()));
+      solids.AddSolid(new Plane(new Vector3(-0.0f, 0.0f, 1f), Vector3.Normalize(new Vector3(0, 1, -0.2f)), new Vector3(0, 0.3f, 1), new Material()));
 
-      Sphere sphere2 = new Sphere(new Vector3(0.4f, 0.1f, 1f), 0.1f, new Vector3(1f, 0f, 0), new Material());
-
-      Plane plane1 = new Plane(new Vector3(-0.0f, 0.0f, 1f), Vector3.Normalize(new Vector3(0,1,-0.2f)), new Vector3(0, 0.3f, 1), new Material());
-
-      Camera camera = new Camera(new Vector3(0, 0, 0), new Vector3(0, 0, 1), new Vector3(0,1,0), aspectRatio:(imPar.width/imPar.height));
+      Camera camera = new Camera(new Vector3(0, 0, 0), new Vector3(0, 0, 1), new Vector3(0,1,0), aspectRatio:((double)imPar.width/(double)imPar.height));
 
       double? t;
       int rayIndex;
@@ -88,24 +87,12 @@ namespace rt004
 
           float[] color = new float[3] { 1, 1, 1 };
 
-          plane1.GetIntersection(ray, out t);
-          if (t is not null && t > 0)
-          {
-            Vector3 colorVec = lights.GetColor(plane1, ray.PositionAfterT((float)t), camera.GetPosition());
-            color = new float[3] { colorVec.X, colorVec.Y, colorVec.Z, };
-          }
+          Solid? closestSolid;
+          solids.GetClosestIntersection(ray, out t, out closestSolid);
 
-          sphere1.GetIntersection(ray, out t);
-          if (t is not null && t > 0)
+          if (t is not null && t > 0 && closestSolid is not null)
           {
-            Vector3 colorVec = lights.GetColor(sphere1, ray.PositionAfterT((float)t), camera.GetPosition());
-            color = new float[3] { colorVec.X, colorVec.Y, colorVec.Z, };
-          }
-
-          sphere2.GetIntersection(ray, out t);
-          if (t is not null && t > 0)
-          {
-            Vector3 colorVec = lights.GetColor(sphere2, ray.PositionAfterT((float)t), camera.GetPosition());
+            Vector3 colorVec = lights.GetColor(closestSolid, ray.PositionAfterT((float)t), camera.GetPosition());
             color = new float[3] { colorVec.X, colorVec.Y, colorVec.Z, };
           }
 
