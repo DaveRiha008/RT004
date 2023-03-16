@@ -58,45 +58,57 @@ namespace rt004
 
     static void CreateHDRImage(FloatImage fi, ImageParameters imPar)
     {
-      Material mat = new Material();
-      Sphere sphere1 = new Sphere(new Vector3(0.4f, 0.1f, 1.5f), 0.1f, new Vector3(0.5f, 0.5f, 0), new Material());
+      Sphere sphere1 = new Sphere(new Vector3(0.4f, 0.1f, 1.8f), 0.1f, new Vector3(0.5f, 0.5f, 0), new Material());
+
       Sphere sphere2 = new Sphere(new Vector3(0.4f, 0.1f, 1f), 0.1f, new Vector3(1f, 0f, 0), new Material());
+
       Plane plane1 = new Plane(new Vector3(-0.0f, 0.0f, 1f), Vector3.Normalize(new Vector3(0,1,-0.2f)), new Vector3(0, 0.3f, 1), new Material());
-      Camera camera = new Camera(new Vector3(0, 0, 0), new Vector3(0, 0, 1), new Vector3(0,1,0));
-      LightSource light = new LightSource(new Vector3(0.0f, 0.8f, 0.8f), new Vector3(1, 1, 1), 1);
-      double ? t;
+
+      Camera camera = new Camera(new Vector3(0, 0, 0), new Vector3(0, 0, 1), new Vector3(0,1,0), aspectRatio:(imPar.width/imPar.height));
+
+      double? t;
       int rayIndex;
       for (int i = 0; i < imPar.width; i++)
       {
         for (int j = 0; j < imPar.height; j++)
         {
-          if (i == 902 && j == 540)
-            t = 0;
           //camera.SetPositionX(i); camera.SetPositionY(j); // linear projection
+
+          Lights lights = new Lights();
+          lights.AddLight(new Vector3(-0.5f, 0.5f, 0.2f), Vector3.One, 2);
+          lights.AddLight(new Vector3(-0.2f, 0.1f, 1.0f), Vector3.One, 1);
+          lights.AddAmbientLight(0.5f);
+
 
           float normalizedX = (-2.0f * i) / imPar.width + 1f;  //normalize for x and y to go from -1 to +1
           float normalizedY = (-2.0f * j) / imPar.height + 1f;
+
           rayIndex = camera.CreateRay(normalizedX, normalizedY); 
           Ray ray = camera.GetRay(rayIndex);
+
           float[] color = new float[3] { 1, 1, 1 };
+
           plane1.GetIntersection(ray, out t);
           if (t is not null && t > 0)
           {
-            Vector3 colorVec = plane1.GetColor(ray.position, ray.PositionAfterT((float)t), light);
+            Vector3 colorVec = lights.GetColor(plane1, ray.PositionAfterT((float)t), camera.GetPosition());
             color = new float[3] { colorVec.X, colorVec.Y, colorVec.Z, };
           }
+
           sphere1.GetIntersection(ray, out t);
           if (t is not null && t > 0)
           {
-            Vector3 colorVec = sphere1.GetColor(ray.position, ray.PositionAfterT((float)t), light);
+            Vector3 colorVec = lights.GetColor(sphere1, ray.PositionAfterT((float)t), camera.GetPosition());
             color = new float[3] { colorVec.X, colorVec.Y, colorVec.Z, };
           }
+
           sphere2.GetIntersection(ray, out t);
           if (t is not null && t > 0)
           {
-            Vector3 colorVec = sphere2.GetColor(ray.position, ray.PositionAfterT((float)t), light);
+            Vector3 colorVec = lights.GetColor(sphere2, ray.PositionAfterT((float)t), camera.GetPosition());
             color = new float[3] { colorVec.X, colorVec.Y, colorVec.Z, };
           }
+
           fi.PutPixel(i, j, color);
           camera.RemoveRay(rayIndex);
         }

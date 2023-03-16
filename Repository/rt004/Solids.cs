@@ -16,6 +16,7 @@ namespace rt004
     public Vector3 color;
     public Material material;
     public abstract void GetIntersection(Ray ray, out double? outT);
+    public abstract Vector3 GetNormal(Vector3 intersectionPoint);
   }
   static class DistanceCalculator
   {
@@ -54,13 +55,20 @@ namespace rt004
       }
     }
   }
-  static class NormalVectorCalculator
+  static class VectorCalculator
   {
     public static Vector3 GetVectorBetween2Points(Vector3 point1, Vector3 point2)
     {
       Vector3 outVec = new Vector3(point2.X - point1.X, point2.Y - point1.Y, point2.Z - point1.Z);
       outVec = Vector3.Normalize(outVec);
       return outVec;
+    }
+
+    public static Vector3 GetReflectVector(Vector3 lightVector, Vector3 normal)
+    {
+      Vector3 reflectVec = 2 * (Vector3.Dot(lightVector, normal)) * normal - lightVector;
+      reflectVec = Vector3.Normalize(reflectVec);
+      return reflectVec;
     }
   }
 
@@ -74,6 +82,11 @@ namespace rt004
       this.normal = normal;
       this.color = color;
       this.material = material;
+    }
+
+    public override Vector3 GetNormal(Vector3 intersectionPoint)
+    {
+      return normal;
     }
 
     public override void GetIntersection(Ray ray, out double? outT)
@@ -92,27 +105,6 @@ namespace rt004
       if (b == 0 && a == 0) outT = 1; //ray is going alongside plane - any T is true
       else if (b != 0) outT = a / b;
       return;
-    }
-
-    public Vector3 GetColor(Vector3 viewPoint, Vector3 intersectionPoint, LightSource light, bool isAmbient = false)
-    {
-      if (isAmbient) { return color * material.ambient; }
-      Vector3 lightVector = NormalVectorCalculator.GetVectorBetween2Points(intersectionPoint, light.position);
-      Vector3 difuseComponent = color;
-      difuseComponent *= light.intensity;
-      difuseComponent *= material.diffuse;
-      difuseComponent *= Math.Max(0, Vector3.Dot(normal, lightVector));
-
-      Vector3 viewPointVec = NormalVectorCalculator.GetVectorBetween2Points(viewPoint, intersectionPoint);
-      Vector3 halfwayVec = viewPointVec + lightVector;
-      halfwayVec = Vector3.Normalize(halfwayVec);
-      Vector3 reflectionComponent = light.color;
-      reflectionComponent *= light.intensity;
-      reflectionComponent *= material.reflection;
-      reflectionComponent *= Math.Max((float)Math.Pow(Vector3.Dot(normal, halfwayVec), material.reflectionSize), 0);
-
-      Vector3 ambientComponent = color * material.ambient;
-      return difuseComponent + ambientComponent + reflectionComponent;
     }
   }
 
@@ -160,33 +152,11 @@ namespace rt004
 
     }
 
-    Vector3 GetNormal(Vector3 intersectionPoint)
+    public override Vector3 GetNormal(Vector3 intersectionPoint)
     {
       Vector3 normal = new Vector3((intersectionPoint.X-position.X)/r, (intersectionPoint.Y-position.Y)/r, (intersectionPoint.Z-position.Z)/r);
       normal = Vector3.Normalize(normal);
       return normal;
-    }
-
-    public Vector3 GetColor(Vector3 viewPoint ,Vector3 intersectionPoint, LightSource light, bool isAmbient = false)
-    {
-      if(isAmbient) { return color * material.ambient; }
-      Vector3 normal = GetNormal(intersectionPoint);
-      Vector3 lightVector = NormalVectorCalculator.GetVectorBetween2Points(intersectionPoint, light.position);
-      Vector3 difuseComponent = color;
-      difuseComponent *= light.intensity;
-      difuseComponent *= material.diffuse;
-      difuseComponent *= Math.Max(0,Vector3.Dot(normal, lightVector));
-
-      Vector3 viewPointVec = NormalVectorCalculator.GetVectorBetween2Points(viewPoint, intersectionPoint);
-      Vector3 halfwayVec = viewPointVec + lightVector;
-      halfwayVec = Vector3.Normalize(halfwayVec);
-      Vector3 reflectionComponent = light.color;
-      reflectionComponent *= light.intensity;
-      reflectionComponent *= material.reflection;
-      reflectionComponent *= Math.Max((float)Math.Pow(Vector3.Dot(normal, halfwayVec), material.reflectionSize),0);
-
-      Vector3 ambientComponent = color * material.ambient;
-      return difuseComponent+ambientComponent+reflectionComponent;
     }
   }
 }

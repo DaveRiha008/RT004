@@ -11,6 +11,7 @@ using System.Security.Cryptography;
 
 namespace rt004
 {
+
   //diffuse 0..1
   //reflection 0..1
   //ambient 0..1
@@ -22,15 +23,18 @@ namespace rt004
     public float reflection;
     public float ambient;
     public float reflectionSize;
-
+    const float diffuseBase = 0.5f;
+    const float reflectionBase = 0.45f;
+    const float ambientBase = 0.05f;
+    const float reflSizeBase = 155f;
     public Material()
     {
-      diffuse = (2.0f / 3.0f);
-      reflection = (11.0f / 36.0f);
-      ambient = (1.0f / 36.0f);
-      reflectionSize = 3;
+      diffuse = diffuseBase;
+      reflection = reflectionBase;
+      ambient = ambientBase;
+      reflectionSize = reflSizeBase;
   }
-    public Material(float diffuse = (2.0f/3.0f), float reflection = (11.0f / 36.0f), float ambient = (1.0f/ 36.0f), float reflectionSize = 3)
+    public Material(float diffuse = diffuseBase, float reflection = reflectionBase, float ambient = ambientBase, float reflectionSize = reflSizeBase)
     {
       this.diffuse = diffuse;
       this.reflection = reflection;
