@@ -11,7 +11,7 @@ namespace rt004
     public Vector3 position = new();
     public Vector3 vector = new();
     public int index;
-    public Ray(Vector3 position, Vector3 vector, int index)
+    public Ray(Vector3 position, Vector3 vector, int index = 0)
     {
       this.position = position;
       this.vector = vector;

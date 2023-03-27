@@ -6,7 +6,6 @@ using System.Numerics;
 
 namespace rt004
 {
-
   class Lights
   {
     Dictionary<int, LightSource> lightSources = new();
@@ -28,31 +27,12 @@ namespace rt004
       this.ambientLight = new AmbientLight(intensity);
     }
 
-    public Vector3 GetColor(Solid solid, Vector3 intersectionPoint, Vector3 viewPoint)
+    public Vector3 GetColor(Solid solid, Vector3 intersectionPoint)
     {
-      Vector3 normal = solid.GetNormal(intersectionPoint);
       Vector3 lightsComponent = Vector3.Zero;
       foreach (var light in lightSources.Values)
       {
-        Vector3 lightVector = VectorCalculator.GetVectorBetween2Points(intersectionPoint, light.position);
-        Vector3 difuseComponent = solid.color;
-        difuseComponent *= light.intensity;
-        difuseComponent *= solid.material.diffuse;
-        difuseComponent *= Math.Max(0, Vector3.Dot(normal, lightVector));
-
-        Vector3 viewPointVec = VectorCalculator.GetVectorBetween2Points(viewPoint, intersectionPoint);
-        Vector3 reflectVec = VectorCalculator.GetReflectVector(lightVector, normal);
-        Vector3 reflectionComponent = light.color;
-        reflectionComponent *= light.intensity;
-        reflectionComponent *= solid.material.reflection;
-        float cosBeta = Math.Max(Vector3.Dot(normal, reflectVec), 0);
-        float powerCosB = (float)Math.Pow(cosBeta, solid.material.reflectionSize);
-        reflectionComponent *= powerCosB;
-
-        if (reflectionComponent.X > 0)
-          cosBeta = 0;
-
-        lightsComponent += reflectionComponent + difuseComponent;
+        lightsComponent += light.GetColor(solid, intersectionPoint);
       }
 
       Vector3 ambientComponent = solid.color * solid.material.ambient * ambientLight.intensity;
@@ -72,7 +52,7 @@ namespace rt004
     }
   }
 
-  struct LightSource
+  class LightSource
   {
     public float intensity;
     public Vector3 color;
@@ -82,6 +62,47 @@ namespace rt004
       this.color = color;
       this.position = position;
       this.intensity = intensity;
+    }
+
+    private float SecondShade(Vector3 intersectionPoint)
+    {
+      const double epsilon = 1.0e-6;
+      Vector3 intersectionLightVector = VectorCalculator.GetVectorBetween2Points(intersectionPoint, position);
+      Ray ray = new Ray(intersectionPoint, intersectionLightVector);
+      double? t;
+      Solid? solid;
+      Scene.solids.GetClosestIntersection(ray, out t, out solid);
+      if ((t is not null || solid is not null) && (t > epsilon || t < -epsilon))
+      {
+        if (intersectionPoint.Z < 2)
+          t = 1;
+        return 0;
+      }
+      return 1f/(float)Math.Pow(DistanceCalculator.GetDistance(intersectionPoint, position),1);
+    }
+
+    public Vector3 GetColor(Solid solid, Vector3 intersectionPoint)
+    {
+      Vector3 normal = solid.GetNormal(intersectionPoint);
+      Vector3 lightVector = VectorCalculator.GetVectorBetween2Points(intersectionPoint, position);
+      Vector3 difuseComponent = solid.color;
+      difuseComponent *= intensity;
+      difuseComponent *= solid.material.diffuse;
+      difuseComponent *= Math.Max(0, Vector3.Dot(normal, lightVector));
+
+      Vector3 reflectVec = VectorCalculator.GetReflectVector(lightVector, normal);
+      Vector3 reflectionComponent = color;
+      reflectionComponent *= intensity;
+      reflectionComponent *= solid.material.reflection;
+      float cosBeta = Math.Max(Vector3.Dot(normal, reflectVec), 0);
+      float powerCosB = (float)Math.Pow(cosBeta, solid.material.reflectionSize);
+      reflectionComponent *= powerCosB;
+
+      Vector3 returnVec = reflectionComponent + difuseComponent;
+
+      returnVec *= SecondShade(intersectionPoint);
+
+      return returnVec;
     }
   }
 }

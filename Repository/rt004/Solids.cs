@@ -50,8 +50,6 @@ namespace rt004
           }
         }
       }
-
-
     }
   }
   abstract class Solid
@@ -122,7 +120,7 @@ namespace rt004
     public Plane(Vector3 position, Vector3 normal, Vector3 color, Material material)
     {
       this.position = position;
-      this.normal = normal;
+      this.normal = Vector3.Normalize(normal);
       this.color = color;
       this.material = material;
     }
@@ -134,20 +132,19 @@ namespace rt004
 
     public override void GetIntersection(Ray ray, out double? outT)
     {
-      float a;
-      float b;
-      Vector3 planePoint = position;
-      Vector3 planeNormal = normal;
-      Vector3 linePoint = ray.position;
-      Vector3 lineVec = ray.vector;
       outT = null;
+      Vector3 p_0 = position;
+      Vector3 n = -normal;
+      Vector3 l_0 = ray.position;
+      Vector3 l = ray.vector;
+      float denominator = Vector3.Dot(l, n);
 
-      //calculate the distance between the linePoint and the line-plane point1 point
-      a = Vector3.Dot(planePoint - linePoint, planeNormal);
-      b = Vector3.Dot(lineVec, planeNormal);
-      if (b == 0 && a == 0) outT = 1; //ray is going alongside plane - any T is true
-      else if (b != 0) outT = a / b;
-      return;
+
+      if (denominator > 0.00001f)
+      {
+        //The distance to the plane
+        outT = Vector3.Dot(p_0 - l_0, n) / denominator;
+      }
     }
   }
 

@@ -5,6 +5,15 @@ using System.Security.Cryptography;
 
 namespace rt004
 {
+   static class Scene
+  {
+
+    public static AllSolids solids = new AllSolids();
+
+    public static Camera camera = new Camera(Vector3.Zero, Vector3.UnitZ);
+
+    public static Lights lights = new Lights();
+  }
   internal class Program
   {
 
@@ -31,7 +40,7 @@ namespace rt004
 
           if (t is not null && t > 0 && closestSolid is not null)
           {
-            Vector3 colorVec = lights.GetColor(closestSolid, ray.PositionAfterT((float)t), camera.GetPosition());
+            Vector3 colorVec = lights.GetColor(closestSolid, ray.PositionAfterT((float)t));
             color = new float[3] { colorVec.X, colorVec.Y, colorVec.Z, };
           }
 
@@ -68,12 +77,6 @@ namespace rt004
       // TODO: put anything interesting into the image.
       // TODO: use fi.PutPixel() function, pixel should be a float[3] array [r, G, B]
 
-      AllSolids solids = new AllSolids();
-
-      Camera camera;
-
-      Lights lights = new Lights();
-
       //     MANUAL PARAMETERS (IGNORE CONFIG)
       //imPar.width = 1920;
       //imPar.height = 1080;
@@ -84,11 +87,11 @@ namespace rt004
       //lights.AddLight(new Vector3(-0.2f, 0.1f, 1.0f), Vector3.One, 1);
       //lights.AddAmbientLight(0.5f);
 
-      ConfigInputHandler.LoadConfig(configStream, ref imPar, out camera, solids, lights);
+      ConfigInputHandler.LoadConfig(configStream, ref imPar, out Scene.camera, Scene.solids, Scene.lights);
 
       FloatImage fi = new FloatImage(imPar.width, imPar.height, 3);
 
-      CreateHDRImage(fi, imPar, camera, solids, lights);
+      CreateHDRImage(fi, imPar, Scene.camera, Scene.solids, Scene.lights);
 
       //fi.SaveHDR(fileName);   // Doesn't work well yet...
       fi.SavePFM(fileName);
