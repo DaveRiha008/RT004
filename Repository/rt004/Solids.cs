@@ -29,6 +29,8 @@ namespace rt004
 
     public void GetClosestIntersection(Ray ray, out double? outT, out Solid? outSolid)
     {
+      const double epsilon = 1.0e-5;
+
       outT = null;
       outSolid = null;
 
@@ -36,7 +38,7 @@ namespace rt004
       {
         double? t;
         solid.GetIntersection(ray, out t);
-        if (t is not null && t > 0)
+        if (t is not null && t > epsilon)
         {
           if (outT is null)
           {
@@ -105,9 +107,9 @@ namespace rt004
       return outVec;
     }
 
-    public static Vector3 GetReflectVector(Vector3 lightVector, Vector3 normal)
+    public static Vector3 GetReflectVector(Vector3 originVec, Vector3 normal)
     {
-      Vector3 reflectVec = 2 * (Vector3.Dot(lightVector, normal)) * normal - lightVector;
+      Vector3 reflectVec = 2 * normal * Vector3.Dot(originVec, normal) - originVec;
       reflectVec = Vector3.Normalize(reflectVec);
       return reflectVec;
     }
