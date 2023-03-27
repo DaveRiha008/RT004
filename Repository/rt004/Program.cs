@@ -24,14 +24,14 @@ namespace rt004
       
       for (int i = 0; i < recursionDepth; i++)
       {
-        Vector3 reflectVec = VectorCalculator.GetReflectVector(currentRay.vector, currentSolid.GetNormal(currentIntersection));
+        Vector3 reflectVec = Vector3.Reflect(currentRay.vector, currentSolid.GetNormal(currentIntersection));
         currentRay = new Ray(currentIntersection, reflectVec);
         double? t;
         Solid? newSolid;
         Scene.solids.GetClosestIntersection(currentRay, out t, out newSolid);
         if (newSolid is null || t is null) return outColor;
         currentIntersection = currentRay.PositionAfterT((float)t);
-        outColor += (float)Math.Pow(currentSolid.material.reflection, 1) * Scene.lights.GetColor(currentSolid, currentIntersection);
+        outColor += (float)Math.Pow(5*currentSolid.material.reflection, 1) * Scene.lights.GetColor(currentSolid, currentIntersection);
         currentSolid = newSolid;
       }
       return outColor;
@@ -62,7 +62,7 @@ namespace rt004
           if (t is not null && t > 0 && closestSolid is not null)
           {
             Vector3 colorVec = lights.GetColor(closestSolid, ray.PositionAfterT((float)t));
-            //colorVec += RayTrace(ray, ray.PositionAfterT((float)t), closestSolid, 4);
+            colorVec += RayTrace(ray, ray.PositionAfterT((float)t), closestSolid, 10);
             color = new float[3] { colorVec.X, colorVec.Y, colorVec.Z, };
           }
 

@@ -90,7 +90,7 @@ namespace rt004
       difuseComponent *= solid.material.diffuse;
       difuseComponent *= Math.Max(0, Vector3.Dot(normal, lightVector));
 
-      Vector3 reflectVec = VectorCalculator.GetReflectVector(lightVector, normal);
+      Vector3 reflectVec = -Vector3.Reflect(lightVector, normal);
       Vector3 reflectionComponent = color;
       reflectionComponent *= intensity;
       reflectionComponent *= solid.material.reflection;

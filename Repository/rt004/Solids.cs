@@ -106,13 +106,6 @@ namespace rt004
       outVec = Vector3.Normalize(outVec);
       return outVec;
     }
-
-    public static Vector3 GetReflectVector(Vector3 originVec, Vector3 normal)
-    {
-      Vector3 reflectVec = 2 * normal * Vector3.Dot(originVec, normal) - originVec;
-      reflectVec = Vector3.Normalize(reflectVec);
-      return reflectVec;
-    }
   }
 
   class Plane : Solid
