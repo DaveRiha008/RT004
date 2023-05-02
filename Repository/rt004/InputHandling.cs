@@ -58,101 +58,21 @@ namespace rt004
         using JsonDocument doc = JsonDocument.Parse(configText);
         JsonElement root = doc.RootElement;
 
-        var givenImagePar = root.GetProperty("image parameters");
-        imagePar.width = givenImagePar.GetProperty("width").GetInt32();
-        imagePar.height = givenImagePar.GetProperty("height").GetInt32();
+        LoadImagePar(root, imagePar);
 
-
-        var givenCamera = root.GetProperty("camera");
-        var givenCameraPos = givenCamera.GetProperty("position");
-        Vector3 newCameraPos = new Vector3(
-          (float)givenCameraPos.GetProperty("x").GetDouble(),
-          (float)givenCameraPos.GetProperty("y").GetDouble(),
-          (float)givenCameraPos.GetProperty("z").GetDouble()
-          );
-
-        var givenCameraViewVec = givenCamera.GetProperty("view vector");
-        Vector3 newCameraViewVec = new Vector3(
-          (float)givenCameraViewVec.GetProperty("x").GetDouble(),
-          (float)givenCameraViewVec.GetProperty("y").GetDouble(),
-          (float)givenCameraViewVec.GetProperty("z").GetDouble()
-          );
-
-        var givenCameraUpVec = givenCamera.GetProperty("up vector");
-        Vector3 newCameraUpVec = new Vector3(
-          (float)givenCameraUpVec.GetProperty("x").GetDouble(),
-          (float)givenCameraUpVec.GetProperty("y").GetDouble(),
-          (float)givenCameraUpVec.GetProperty("z").GetDouble()
-          );
-        double newCameraAspectRatio = (double)imagePar.width / (double)imagePar.height;
-        camera = new Camera(newCameraPos, newCameraViewVec, newCameraUpVec, aspectRatio:newCameraAspectRatio);
-
+        LoadCamera(root, out camera, imagePar);
 
         var givenSolids = root.GetProperty("solids");
         var givenSpheres = givenSolids.GetProperty("spheres").EnumerateArray();
         foreach (var sphere in givenSpheres)
         {
-          var pos = sphere.GetProperty("position");
-          Vector3 newSpherePos = new Vector3(
-            (float)pos.GetProperty("x").GetDouble(),
-            (float)pos.GetProperty("y").GetDouble(),
-            (float)pos.GetProperty("z").GetDouble()
-            );
-
-          float radius = (float)sphere.GetProperty("radius").GetDouble();
-
-          var color = sphere.GetProperty("color");
-          Vector3 newSphereColor = new Vector3(
-            (float)color.GetProperty("r").GetDouble(),
-            (float)color.GetProperty("g").GetDouble(),
-            (float)color.GetProperty("b").GetDouble()
-            );
-
-          var material = sphere.GetProperty("material");
-          Material newSphereMaterial = new Material(
-            (float)material.GetProperty("diffuse coef").GetDouble(),
-            (float)material.GetProperty("reflection coef").GetDouble(),
-            (float)material.GetProperty("ambient coef").GetDouble(),
-            (float)material.GetProperty("reflection size (exponent)").GetDouble()
-            );
-          Sphere newSphere = new Sphere(newSpherePos, radius, newSphereColor, newSphereMaterial);
-          solids.AddSolid(newSphere);
+          LoadSphere(solids, sphere);
         }
 
         var givenPlanes = givenSolids.GetProperty("planes").EnumerateArray();
         foreach (var plane in givenPlanes)
         {
-          var pos = plane.GetProperty("position");
-          Vector3 newPlanePos = new Vector3(
-            (float)pos.GetProperty("x").GetDouble(),
-            (float)pos.GetProperty("y").GetDouble(),
-            (float)pos.GetProperty("z").GetDouble()
-            );
-
-          var normal = plane.GetProperty("normal");
-          Vector3 newPlaneNormal = new Vector3(
-            (float)normal.GetProperty("x").GetDouble(),
-            (float)normal.GetProperty("y").GetDouble(),
-            (float)normal.GetProperty("z").GetDouble()
-            );
-
-          var color = plane.GetProperty("color");
-          Vector3 newPlaneColor = new Vector3(
-            (float)color.GetProperty("r").GetDouble(),
-            (float)color.GetProperty("g").GetDouble(),
-            (float)color.GetProperty("b").GetDouble()
-            );
-
-          var material = plane.GetProperty("material");
-          Material newPlaneMaterial = new Material(
-            (float)material.GetProperty("diffuse coef").GetDouble(),
-            (float)material.GetProperty("reflection coef").GetDouble(),
-            (float)material.GetProperty("ambient coef").GetDouble(),
-            (float)material.GetProperty("reflection size (exponent)").GetDouble()
-            );
-
-          Plane newPlane = new Plane(newPlanePos, newPlaneNormal, newPlaneColor, newPlaneMaterial);
-          solids.AddSolid(newPlane);
+          LoadPlane(solids, plane);
         }
 
 
@@ -163,44 +83,133 @@ namespace rt004
         var givenLightSources = givenLights.GetProperty("light sources").EnumerateArray();
         foreach ( var light in givenLightSources)
         {
-          var pos = light.GetProperty("position");
-          Vector3 newLightPos = new Vector3(
-            (float)pos.GetProperty("x").GetDouble(),
-            (float)pos.GetProperty("y").GetDouble(),
-            (float)pos.GetProperty("z").GetDouble()
-            );
-
-          var color = light.GetProperty("color");
-          Vector3 newLightColor = new Vector3(
-            (float)color.GetProperty("r").GetDouble(),
-            (float)color.GetProperty("g").GetDouble(),
-            (float)color.GetProperty("b").GetDouble()
-            );
-
-          float newLightIntensity = (float)light.GetProperty("intensity").GetDouble();
-
-          lights.AddLight(newLightPos, newLightColor, newLightIntensity);
+          LoadLight(lights, light);
         }
-
-
-
-
-
-
-        //KeyValuePair<string, string>? pair = new KeyValuePair<string, string>();
-        //bool end = false;
-        //while (!end)
-        //{
-        //  pair = config.GetPair(out end);
-        //  if (pair == null) continue;
-        //  configOptions.Add(pair.Value.Key, pair.Value.Value);
-        //}
       }
     }
+
+    static void LoadImagePar(JsonElement root, ImageParameters imagePar)
+    {
+      var givenImagePar = root.GetProperty("image parameters");
+      imagePar.width = givenImagePar.GetProperty("width").GetInt32();
+      imagePar.height = givenImagePar.GetProperty("height").GetInt32();
+    }
+
+    static void LoadCamera(JsonElement root, out Camera camera, ImageParameters imagePar)
+    {
+      var givenCamera = root.GetProperty("camera");
+      var givenCameraPos = givenCamera.GetProperty("position");
+      Vector3 newCameraPos = new Vector3(
+        (float)givenCameraPos.GetProperty("x").GetDouble(),
+        (float)givenCameraPos.GetProperty("y").GetDouble(),
+        (float)givenCameraPos.GetProperty("z").GetDouble()
+        );
+
+      var givenCameraViewVec = givenCamera.GetProperty("view vector");
+      Vector3 newCameraViewVec = new Vector3(
+        (float)givenCameraViewVec.GetProperty("x").GetDouble(),
+        (float)givenCameraViewVec.GetProperty("y").GetDouble(),
+        (float)givenCameraViewVec.GetProperty("z").GetDouble()
+        );
+
+      var givenCameraUpVec = givenCamera.GetProperty("up vector");
+      Vector3 newCameraUpVec = new Vector3(
+        (float)givenCameraUpVec.GetProperty("x").GetDouble(),
+        (float)givenCameraUpVec.GetProperty("y").GetDouble(),
+        (float)givenCameraUpVec.GetProperty("z").GetDouble()
+        );
+      double newCameraAspectRatio = (double)imagePar.width / (double)imagePar.height;
+      camera = new Camera(newCameraPos, newCameraViewVec, newCameraUpVec, aspectRatio: newCameraAspectRatio);
+    }
+
+    static void LoadSphere(AllSolids solids, JsonElement sphere)
+    {
+      var pos = sphere.GetProperty("position");
+      Vector3 newSpherePos = new Vector3(
+        (float)pos.GetProperty("x").GetDouble(),
+        (float)pos.GetProperty("y").GetDouble(),
+        (float)pos.GetProperty("z").GetDouble()
+        );
+
+      float radius = (float)sphere.GetProperty("radius").GetDouble();
+
+      var color = sphere.GetProperty("color");
+      Vector3 newSphereColor = new Vector3(
+        (float)color.GetProperty("r").GetDouble(),
+        (float)color.GetProperty("g").GetDouble(),
+        (float)color.GetProperty("b").GetDouble()
+        );
+
+      var material = sphere.GetProperty("material");
+      Material newSphereMaterial = new Material(
+        (float)material.GetProperty("diffuse coef").GetDouble(),
+        (float)material.GetProperty("reflection coef").GetDouble(),
+        (float)material.GetProperty("ambient coef").GetDouble(),
+        (float)material.GetProperty("reflection size (exponent)").GetDouble()
+        );
+      Sphere newSphere = new Sphere(newSpherePos, radius, newSphereColor, newSphereMaterial);
+      solids.AddSolid(newSphere);
+    }
+
+    static void LoadPlane(AllSolids solids, JsonElement plane)
+    {
+      var pos = plane.GetProperty("position");
+      Vector3 newPlanePos = new Vector3(
+        (float)pos.GetProperty("x").GetDouble(),
+        (float)pos.GetProperty("y").GetDouble(),
+        (float)pos.GetProperty("z").GetDouble()
+        );
+
+      var normal = plane.GetProperty("normal");
+      Vector3 newPlaneNormal = new Vector3(
+        (float)normal.GetProperty("x").GetDouble(),
+        (float)normal.GetProperty("y").GetDouble(),
+        (float)normal.GetProperty("z").GetDouble()
+        );
+
+      var color = plane.GetProperty("color");
+      Vector3 newPlaneColor = new Vector3(
+        (float)color.GetProperty("r").GetDouble(),
+        (float)color.GetProperty("g").GetDouble(),
+        (float)color.GetProperty("b").GetDouble()
+        );
+
+      var material = plane.GetProperty("material");
+      Material newPlaneMaterial = new Material(
+        (float)material.GetProperty("diffuse coef").GetDouble(),
+        (float)material.GetProperty("reflection coef").GetDouble(),
+        (float)material.GetProperty("ambient coef").GetDouble(),
+        (float)material.GetProperty("reflection size (exponent)").GetDouble()
+        );
+
+      Plane newPlane = new Plane(newPlanePos, newPlaneNormal, newPlaneColor, newPlaneMaterial);
+      solids.AddSolid(newPlane);
+    }
+
+    static void LoadLight(Lights lights, JsonElement light)
+    {
+      var pos = light.GetProperty("position");
+      Vector3 newLightPos = new Vector3(
+        (float)pos.GetProperty("x").GetDouble(),
+        (float)pos.GetProperty("y").GetDouble(),
+        (float)pos.GetProperty("z").GetDouble()
+        );
+
+      var color = light.GetProperty("color");
+      Vector3 newLightColor = new Vector3(
+        (float)color.GetProperty("r").GetDouble(),
+        (float)color.GetProperty("g").GetDouble(),
+        (float)color.GetProperty("b").GetDouble()
+        );
+
+      float newLightIntensity = (float)light.GetProperty("intensity").GetDouble();
+
+      lights.AddLight(newLightPos, newLightColor, newLightIntensity);
+    }
+
+
   }
-
-
-
 }
+
 
 

@@ -31,7 +31,7 @@ namespace rt004
         Scene.solids.GetClosestIntersection(currentRay, out t, out newSolid);
         if (newSolid is null || t is null) return outColor;
         currentIntersection = currentRay.PositionAfterT((float)t);
-        outColor += (float)Math.Pow(5*currentSolid.material.reflection, 1) * Scene.lights.GetColor(currentSolid, currentIntersection);
+        outColor += (float)Math.Pow(2*currentSolid.material.reflection, 1) * Scene.lights.GetColor(currentSolid, currentIntersection);
         currentSolid = newSolid;
       }
       return outColor;

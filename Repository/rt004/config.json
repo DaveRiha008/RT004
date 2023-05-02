@@ -5,13 +5,13 @@
   },
   "camera": {
     "position": {
-      "x": 0,
-      "y": 0,
+      "x": 0.5,
+      "y": 0.5,
       "z": 0
     },
     "view vector": {
       "x": 0,
-      "y": 0,
+      "y": -0.5,
       "z": 1
     },
     "up vector": {
@@ -35,8 +35,8 @@
           "b": 0
         },
         "material": {
-          "diffuse coef": 0.4,
-          "reflection coef": 0.55,
+          "diffuse coef": 0.2,
+          "reflection coef": 0.9,
           "ambient coef": 0.05,
           "reflection size (exponent)": 155
         }

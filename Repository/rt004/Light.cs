@@ -66,7 +66,7 @@ namespace rt004
 
     private float SecondShade(Vector3 intersectionPoint)
     {
-      const double epsilon = 1.0e-6;
+      const double epsilon = 1.0e-4;
       Vector3 intersectionLightVector = VectorCalculator.GetVectorBetween2Points(intersectionPoint, position);
       Ray ray = new Ray(intersectionPoint, intersectionLightVector);
       double? t;
