@@ -20,123 +20,171 @@
       "z": 0
     }
   },
-  "solids": {
-    "spheres": [
-      {
-        "position": {
-          "x": 0.4,
-          "y": 0.1,
-          "z": 1.0
+  "shapes": [
+    {
+      "root node": {
+        "is leaf": true,
+        "sphere": {
+
         },
-        "radius": 0.1,
-        "color": {
-          "r": 1,
-          "g": 0,
-          "b": 0
-        },
-        "material": {
-          "diffuse coef": 0.2,
-          "reflection coef": 0.9,
-          "ambient coef": 0.05,
-          "reflection size (exponent)": 155
+        "plane": {
+
         }
       },
-      {
-        "position": {
-          "x": 0.4,
-          "y": 0.4,
-          "z": 1.8
-        },
-        "radius": 0.1,
-        "color": {
-          "r": 0.5,
-          "g": 0.5,
-          "b": 0
-        },
-        "material": {
-          "diffuse coef": 0.4,
-          "reflection coef": 0.55,
-          "ambient coef": 0.05,
-          "reflection size (exponent)": 155
-        }
-      },
-      {
-        "position": {
-          "x": 0.1,
-          "y": 0.2,
-          "z": 0.7
-        },
-        "radius": 0.1,
-        "color": {
-          "r": 0.5,
-          "g": 0.9,
-          "b": 0
-        },
-        "material": {
-          "diffuse coef": 0.4,
-          "reflection coef": 0.55,
-          "ambient coef": 0.05,
-          "reflection size (exponent)": 155
-        }
+      "material": {
+
       }
-    ],
-    "planes": [
-      {
-        "position": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 1.0
-        },
-        "normal": {
-          "x": 0,
-          "y": 1,
-          "z": -0.2
-        },
-        "color": {
-          "r": 0,
-          "g": 0.3,
-          "b": 1
-        },
-        "material": {
-          "diffuse coef": 0.9,
-          "reflection coef": 0.01,
-          "ambient coef": 0.05,
-          "reflection size (exponent)": 155
-        }
-      }
-    ]
-  },
-  "lights": {
-    "ambient light": {
-      "intensity": 0.5
     },
-    "light sources": [
-      {
-        "position": {
-          "x": -0.5,
-          "y": 0.9,
-          "z": 0.2
+    {
+      "root node": {
+        "is leaf": false,
+        "tranform": {
+
         },
-        "color": {
-          "r": 1,
-          "g": 1,
-          "b": 1
-        },
-        "intensity": 2
+        "child nodes": [
+          {
+            "is leaf": false,
+            "transform": {
+              "translate x": 2,
+              "translate y": 1,
+              "translate z": 3,
+              "rotate x": 0,
+              "rotate y": 20,
+              "rotate z": 45
+            },
+            "child nodes": [
+              {
+                "is leaf": true,
+                "plane": {
+
+                },
+                "sphere": {
+
+                }
+              }
+            ]
+          }
+        ]
+
       },
-      {
-        "position": {
-          "x": 0,
-          "y": 1,
-          "z": 2
-        },
-        "color": {
-          "r": 1,
-          "g": 1,
-          "b": 1
-        },
-        "intensity": 1
+      "material": {
+
       }
-    ]
+    }
+  ]
+} 
+"spheres" : [
+  {
+    "position": {
+      "x": 0.4,
+      "y": 0.1,
+      "z": 1.0
+    },
+    "radius": 0.1,
+    "color": {
+      "r": 1,
+      "g": 0,
+      "b": 0
+    },
+    "material": {
+      "diffuse coef": 0.2,
+      "reflection coef": 0.9,
+      "ambient coef": 0.05,
+      "reflection size (exponent)": 155
+    }
+  },
+  {
+    "position": {
+      "x": 0.4,
+      "y": 0.4,
+      "z": 1.8
+    },
+    "radius": 0.1,
+    "color": {
+      "r": 0.5,
+      "g": 0.5,
+      "b": 0
+    },
+    "material": {
+      "diffuse coef": 0.4,
+      "reflection coef": 0.55,
+      "ambient coef": 0.05,
+      "reflection size (exponent)": 155
+    }
+  },
+  {
+    "position": {
+      "x": 0.1,
+      "y": 0.2,
+      "z": 0.7
+    },
+    "radius": 0.1,
+    "color": {
+      "r": 0.5,
+      "g": 0.9,
+      "b": 0
+    },
+    "material": {
+      "diffuse coef": 0.4,
+      "reflection coef": 0.55,
+      "ambient coef": 0.05,
+      "reflection size (exponent)": 155
+    }
   }
-}
+], "planes" : [
+  {
+    "position": {
+      "x": 0.0,
+      "y": 0.0,
+      "z": 1.0
+    },
+    "normal": {
+      "x": 0,
+      "y": 1,
+      "z": -0.2
+    },
+    "color": {
+      "r": 0,
+      "g": 0.3,
+      "b": 1
+    },
+    "material": {
+      "diffuse coef": 0.9,
+      "reflection coef": 0.01,
+      "ambient coef": 0.05,
+      "reflection size (exponent)": 155
+    }
+  }
+] ], "lights": {
+  "ambient light": {
+    "intensity": 0.5
+  },
+  "light sources": [
+    {
+      "position": {
+        "x": -0.5,
+        "y": 0.9,
+        "z": 0.2
+      },
+      "color": {
+        "r": 1,
+        "g": 1,
+        "b": 1
+      },
+      "intensity": 2
+    },
+    {
+      "position": {
+        "x": 0,
+        "y": 1,
+        "z": 2
+      },
+      "color": {
+        "r": 1,
+        "g": 1,
+        "b": 1
+      },
+      "intensity": 1
+    }
+  ]
+} }

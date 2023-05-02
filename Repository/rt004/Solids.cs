@@ -8,6 +8,9 @@ using System.Dynamic;
 using System.Numerics;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
+using MathNet.Numerics;
+using MathNet.Numerics.LinearAlgebra;
+using MathNet.Numerics.Distributions;
 
 namespace rt004
 {
@@ -60,6 +63,7 @@ namespace rt004
     public Material material;
     public abstract void GetIntersection(Ray ray, out double? outT);
     public abstract Vector3 GetNormal(Vector3 intersectionPoint);
+    public abstract void Transform(Matrix<float> tranformMatrix);
   }
   static class DistanceCalculator
   {
@@ -141,6 +145,23 @@ namespace rt004
         outT = Vector3.Dot(p_0 - l_0, n) / denominator;
       }
     }
+
+    public override void Transform(Matrix<float> tranformMatrix)
+    {
+      float[] arrayPos = new float[4] { position.X, position.Y, position.Z, 1 };
+      var position4d = MathNet.Numerics.LinearAlgebra.Vector<float>.Build.DenseOfArray(arrayPos);
+      var newPos4d = position4d * tranformMatrix;
+      position.X = newPos4d[0] / newPos4d[3];
+      position.Y = newPos4d[1] / newPos4d[3];
+      position.Z = newPos4d[2] / newPos4d[3];
+
+      float[] arrayNor = new float[4] { normal.X, normal.Y, normal.Z, 1 };
+      var normal4d = MathNet.Numerics.LinearAlgebra.Vector<float>.Build.DenseOfArray(arrayNor);
+      var newNor4d = normal4d * tranformMatrix;
+      normal.X = newNor4d[0] / newNor4d[3];
+      normal.Y = newNor4d[1] / newNor4d[3];
+      normal.Z = newNor4d[2] / newNor4d[3];
+    }
   }
 
   class Sphere:Solid
@@ -192,6 +213,16 @@ namespace rt004
       Vector3 normal = new Vector3((intersectionPoint.X-position.X)/r, (intersectionPoint.Y-position.Y)/r, (intersectionPoint.Z-position.Z)/r);
       normal = Vector3.Normalize(normal);
       return normal;
+    }
+
+    public override void Transform(Matrix<float> tranformMatrix)
+    {
+      float[] arrayPos = new float[4] { position.X, position.Y, position.Z, 1 };
+      var position4d = MathNet.Numerics.LinearAlgebra.Vector<float>.Build.DenseOfArray(arrayPos);
+      var newPos4d = position4d * tranformMatrix;
+      position.X = newPos4d[0] / newPos4d[3];
+      position.Y = newPos4d[1] / newPos4d[3];
+      position.Z = newPos4d[2] / newPos4d[3];
     }
   }
 }
