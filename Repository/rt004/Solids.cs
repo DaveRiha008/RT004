@@ -62,7 +62,8 @@ namespace rt004
     public Vector3 color;
     public Material material;
     public abstract void GetIntersection(Ray ray, out double? outT);
-    public abstract Vector3 GetNormal(Vector3 intersectionPoint);
+    //public abstract Vector3 GetNormal(Vector3 intersectionPoint);
+    public abstract Vector3 GetNormal(Vector3 intersectionPoint, Vector3 origin);
     public abstract void Transform(Matrix<float> tranformMatrix);
   }
   static class DistanceCalculator
@@ -124,9 +125,23 @@ namespace rt004
       this.material = material;
     }
 
-    public override Vector3 GetNormal(Vector3 intersectionPoint)
+    bool ShouldReverseNormal(Vector3 rayOrigin)
+    {
+      Ray ray = new Ray(rayOrigin, VectorCalculator.GetVectorBetween2Points((position + normal), rayOrigin));
+      double? T;
+      GetIntersection(ray, out T);
+      if (T is null) return false;
+      else return true;
+    }
+
+    public Vector3 GetNormal(Vector3 intersectionPoint)
     {
       return normal;
+    }
+    public override Vector3 GetNormal(Vector3 intersectionPoint, Vector3 origin)
+    {
+      if (ShouldReverseNormal(origin)) return normal;
+      return -normal;
     }
 
     public override void GetIntersection(Ray ray, out double? outT)
@@ -208,10 +223,22 @@ namespace rt004
 
     }
 
-    public override Vector3 GetNormal(Vector3 intersectionPoint)
+    bool ShouldReverseNormal(Vector3 rayOrigin)
+    {
+      const double epsilon = 1.0e-5;
+      return DistanceCalculator.GetDistance(rayOrigin, position) < r - epsilon;
+    }
+
+    public Vector3 GetNormal(Vector3 intersectionPoint)
     {
       Vector3 normal = new Vector3((intersectionPoint.X-position.X)/r, (intersectionPoint.Y-position.Y)/r, (intersectionPoint.Z-position.Z)/r);
       normal = Vector3.Normalize(normal);
+      return normal;
+    }
+    public override Vector3 GetNormal(Vector3 intersectionPoint, Vector3 origin)
+    {
+      Vector3 normal = GetNormal(intersectionPoint);
+      if (ShouldReverseNormal(origin)) return -normal;
       return normal;
     }
 

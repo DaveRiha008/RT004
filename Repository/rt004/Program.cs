@@ -12,36 +12,52 @@ namespace rt004
     public static Camera camera = new Camera(Vector3.Zero, Vector3.UnitZ);
 
     public static Lights lights = new Lights();
+
+    public static ImageParameters imageParameters = new ImageParameters();
   }
   internal class Program
   {
-    static Vector3 RayTrace(Ray ray0, Vector3 intersection0, Solid solid0, int recursionDepth)
-    {
-      Vector3 outColor = Vector3.Zero;
-      Vector3 currentIntersection = intersection0;
-      Solid currentSolid = solid0;
+    static Vector3 RayTrace(Ray ray0, int currentRecursion)
+    {      
       Ray currentRay = ray0;
+      double? t;
+      Solid? currentSolid;
+      Scene.solids.GetClosestIntersection(currentRay, out t, out currentSolid);
+      if (t is null || t <= 0 || currentSolid is null) return Vector3.Zero;
+      Vector3 currentIntersection = currentRay.PositionAfterT((float)t);
       
-      for (int i = 0; i < recursionDepth; i++)
+      Vector3 outColor = Scene.lights.GetColor(currentSolid, currentIntersection, currentRay);
+
+      Vector3 reflectVec = Vector3.Reflect(currentRay.vector, currentSolid.GetNormal(currentIntersection, currentRay.position));
+
+      Ray newRay = new Ray(currentIntersection, reflectVec);
+      if (currentSolid is Sphere && outColor.X > 0.1 && currentRecursion == 10)
+        outColor *= 1;
+      if (currentRecursion > 0)
       {
-        Vector3 reflectVec = Vector3.Reflect(currentRay.vector, currentSolid.GetNormal(currentIntersection));
-        currentRay = new Ray(currentIntersection, reflectVec);
-        double? t;
-        Solid? newSolid;
-        Scene.solids.GetClosestIntersection(currentRay, out t, out newSolid);
-        if (newSolid is null || t is null) return outColor;
-        currentIntersection = currentRay.PositionAfterT((float)t);
-        outColor += (float)Math.Pow(2*currentSolid.material.reflection, 1) * Scene.lights.GetColor(currentSolid, currentIntersection);
-        currentSolid = newSolid;
+        Vector3 rayTracedColor = RayTrace(newRay, currentRecursion-1);
+        outColor += (float)Math.Pow(currentSolid.material.reflection, Scene.imageParameters.recursionDepth - currentRecursion + 1) * rayTracedColor;
       }
+
+      //for (int i = 0; i < currentRecursion; i++)
+      //{
+      //  Vector3 reflectVec = Vector3.Reflect(currentRay.vector, currentSolid.GetNormal(currentIntersection, currentRay.position));
+
+      //  currentRay = new Ray(currentIntersection, reflectVec);
+      //  double? t1;
+      //  Solid? newSolid;
+      //  Scene.solids.GetClosestIntersection(currentRay, out t1, out newSolid);
+      //  if (newSolid is null || t1 is null) return outColor;
+      //  currentIntersection = currentRay.PositionAfterT((float)t1);
+      //  outColor += (float)Math.Pow(2 * currentSolid.material.reflection, 1) * Scene.lights.GetColor(currentSolid, currentIntersection, currentRay);
+      //  currentSolid = newSolid;
+      //}
       return outColor;
     }
 
 
-    static void CreateHDRImage(FloatImage fi, ImageParameters imPar, Camera camera, AllSolids solids, Lights lights)
+    static void CreateHDRImage(FloatImage fi, ImageParameters imPar, Camera camera)
     {
-      double? t;
-      Solid? closestSolid;
       int rayIndex;
       for (int i = 0; i < imPar.width; i++)
       {
@@ -55,16 +71,8 @@ namespace rt004
           rayIndex = camera.CreateRay(normalizedX, normalizedY); 
           Ray ray = camera.GetRay(rayIndex);
 
-          float[] color = new float[3] { 1, 1, 1 };
-
-          solids.GetClosestIntersection(ray, out t, out closestSolid);
-
-          if (t is not null && t > 0 && closestSolid is not null)
-          {
-            Vector3 colorVec = lights.GetColor(closestSolid, ray.PositionAfterT((float)t));
-            colorVec += RayTrace(ray, ray.PositionAfterT((float)t), closestSolid, 10);
-            color = new float[3] { colorVec.X, colorVec.Y, colorVec.Z, };
-          }
+          Vector3 colorVec = RayTrace(ray, imPar.recursionDepth);
+          float[] color = new float[3] { colorVec.X, colorVec.Y, colorVec.Z, };
 
           fi.PutPixel(i, j, color);
           camera.RemoveRay(rayIndex);
@@ -76,7 +84,8 @@ namespace rt004
     {
       // Parameters.
       // TODO: parse command-line arguments and/or your config file.
-      ImageParameters imPar = new ImageParameters(600, 450);
+      ImageParameters imPar = new ImageParameters(600, 450, 10);
+      Scene.imageParameters = imPar;
       string fileName = "demo.pfm";
       //Console.WriteLine("Input your config file name (path): ");
       //string? configFileName = Console.ReadLine();
@@ -113,7 +122,7 @@ namespace rt004
 
       FloatImage fi = new FloatImage(imPar.width, imPar.height, 3);
 
-      CreateHDRImage(fi, imPar, Scene.camera, Scene.solids, Scene.lights);
+      CreateHDRImage(fi, imPar, Scene.camera);
 
       //fi.SaveHDR(fileName);   // Doesn't work well yet...
       fi.SavePFM(fileName);

@@ -27,12 +27,12 @@ namespace rt004
       this.ambientLight = new AmbientLight(intensity);
     }
 
-    public Vector3 GetColor(Solid solid, Vector3 intersectionPoint)
+    public Vector3 GetColor(Solid solid, Vector3 intersectionPoint, Ray ray)
     {
       Vector3 lightsComponent = Vector3.Zero;
       foreach (var light in lightSources.Values)
       {
-        lightsComponent += light.GetColor(solid, intersectionPoint);
+        lightsComponent += light.GetColor(solid, intersectionPoint, ray);
       }
 
       Vector3 ambientComponent = solid.color * solid.material.ambient * ambientLight.intensity;
@@ -74,16 +74,14 @@ namespace rt004
       Scene.solids.GetClosestIntersection(ray, out t, out solid);
       if ((t is not null || solid is not null) && (t > epsilon || t < -epsilon))
       {
-        if (intersectionPoint.Z < 2)
-          t = 1;
         return 0;
       }
       return 1f/(float)Math.Pow(DistanceCalculator.GetDistance(intersectionPoint, position),1);
     }
 
-    public Vector3 GetColor(Solid solid, Vector3 intersectionPoint)
+    public Vector3 GetColor(Solid solid, Vector3 intersectionPoint, Ray ray)
     {
-      Vector3 normal = solid.GetNormal(intersectionPoint);
+      Vector3 normal = solid.GetNormal(intersectionPoint, ray.position);
       Vector3 lightVector = VectorCalculator.GetVectorBetween2Points(intersectionPoint, position);
       Vector3 difuseComponent = solid.color;
       difuseComponent *= intensity;

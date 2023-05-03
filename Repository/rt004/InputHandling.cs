@@ -13,10 +13,12 @@ namespace rt004
   {
     public int width;
     public int height;
-    public ImageParameters(int width, int height)
+    public int recursionDepth;
+    public ImageParameters(int width, int height, int recursion_depth)
     {
       this.width = width;
       this.height = height;
+      this.recursionDepth = recursion_depth;
     }
   }
 
@@ -103,6 +105,7 @@ namespace rt004
       var givenImagePar = root.GetProperty("image parameters");
       imagePar.width = givenImagePar.GetProperty("width").GetInt32();
       imagePar.height = givenImagePar.GetProperty("height").GetInt32();
+      imagePar.recursionDepth = givenImagePar.GetProperty("rt recursion depth").GetInt32();
     }
 
     static void LoadCamera(JsonElement root, out Camera camera, ImageParameters imagePar)
@@ -235,7 +238,9 @@ namespace rt004
         (float)material.GetProperty("diffuse coef").GetDouble(),
         (float)material.GetProperty("reflection coef").GetDouble(),
         (float)material.GetProperty("ambient coef").GetDouble(),
-        (float)material.GetProperty("reflection size (exponent)").GetDouble()
+        (float)material.GetProperty("reflection size (exponent)").GetDouble(),
+        (float)material.GetProperty("transparency").GetDouble(),
+        (float)material.GetProperty("refraction index").GetDouble()
         );
       return newMaterial;
     }

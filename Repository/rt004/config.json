@@ -1,7 +1,8 @@
 {
   "image parameters": {
     "width": 1920,
-    "height": 1080
+    "height": 1080,
+    "rt recursion depth": 10
   },
   "camera": {
     "position": {
@@ -42,7 +43,9 @@
         "diffuse coef": 0.4,
         "reflection coef": 0.55,
         "ambient coef": 0.05,
-        "reflection size (exponent)": 155
+        "reflection size (exponent)": 155,
+        "transparency": 0,
+        "refraction index": 1
       }
     },
     {
@@ -68,7 +71,9 @@
             "diffuse coef": 0.9,
             "reflection coef": 0.01,
             "ambient coef": 0.05,
-            "reflection size (exponent)": 155
+            "reflection size (exponent)": 155,
+            "transparency": 0,
+            "refraction index": 1
           }
         }
       },
@@ -76,7 +81,9 @@
         "diffuse coef": 0.4,
         "reflection coef": 0.55,
         "ambient coef": 0.05,
-        "reflection size (exponent)": 155
+        "reflection size (exponent)": 155,
+        "transparency": 0,
+        "refraction index": 1
       }
     },
     {
@@ -128,15 +135,17 @@
                   },
                   "radius": 0.1,
                   "color": {
-                    "r": 0.5,
-                    "g": 0.9,
+                    "r": 0,
+                    "g": 0,
                     "b": 0
                   },
                   "material": {
                     "diffuse coef": 0.9,
                     "reflection coef": 0.01,
                     "ambient coef": 0.05,
-                    "reflection size (exponent)": 155
+                    "reflection size (exponent)": 155,
+                    "transparency": 1,
+                    "refraction index": 1.2
                   }
                 }
               }
@@ -145,10 +154,12 @@
         ]
       },
       "material": {
-        "diffuse coef": 0.2,
-        "reflection coef": 0.9,
+        "diffuse coef": 0.4,
+        "reflection coef": 0.5,
         "ambient coef": 0.05,
-        "reflection size (exponent)": 155
+        "reflection size (exponent)": 155,
+        "transparency": 0,
+        "refraction index": 1
       }
     }
   ],
