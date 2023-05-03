@@ -78,64 +78,13 @@ namespace rt004
 
         LoadCamera(root, out camera, imagePar);
 
-        static void LoadNode(Shape shape, Matrix<float> tMat, JsonElement parentElement, AllSolids solids)
-        {
-          var M = Matrix<float>.Build;
-
-          var matrix = M.Dense(4, 4);
-          
-          bool is_leaf = parentElement.GetProperty("is leaf").GetBoolean();
-          if (is_leaf)
-          {
-            JsonElement sphere;
-            if (parentElement.TryGetProperty("sphere", out sphere))
-            {
-              LoadSphere(solids, sphere, tMat);
-            }
-                                                                           //Leaf = load solids inside
-            JsonElement plane;
-            if (parentElement.TryGetProperty("plane", out plane))
-            {
-              LoadPlane(solids, plane, tMat);
-            }
-          }
-
-          else
-          {
-            var transform = parentElement.GetProperty("transform");
-            var newTMat = tMat * GetTransformMat(transform);
-
-            var childNodes = parentElement.GetProperty("child nodes").EnumerateArray();
-            foreach ( var childNode in childNodes )
-            {
-              LoadNode(shape, newTMat, childNode, solids);
-            }
-
-
-
-
-          }
-        }
-
         var givenShapes = root.GetProperty("shapes").EnumerateArray();
         foreach (var givenShape in givenShapes)
         {
-
+          Shape shape = new Shape() { material = LoadMaterial(givenShape) };
+          JsonElement rootNode = givenShape.GetProperty("root node");
+          LoadNode(shape, Matrix<float>.Build.DenseIdentity(4, 4), rootNode, solids);
         }
-
-        var givenSolids = root.GetProperty("solids");
-        var givenSpheres = givenSolids.GetProperty("spheres").EnumerateArray();
-        foreach (var sphere in givenSpheres)
-        {
-          LoadSphere(solids, sphere);
-        }
-
-        var givenPlanes = givenSolids.GetProperty("planes").EnumerateArray();
-        foreach (var plane in givenPlanes)
-        {
-          LoadPlane(solids, plane);
-        }
-
 
         var givenLights = root.GetProperty("lights");
         var givenAmbient = givenLights.GetProperty("ambient light");
@@ -183,7 +132,48 @@ namespace rt004
       camera = new Camera(newCameraPos, newCameraViewVec, newCameraUpVec, aspectRatio: newCameraAspectRatio);
     }
 
-    static void LoadSphere(AllSolids solids, JsonElement sphere, Matrix<float>? transformMatrix = null)
+    static void LoadNode(Shape shape, Matrix<float> tMat, JsonElement parentElement, AllSolids solids)
+    {
+      bool is_leaf = parentElement.GetProperty("is leaf").GetBoolean();
+      if (is_leaf)
+      {
+        JsonElement sphere;
+        if (parentElement.TryGetProperty("sphere", out sphere))
+        {
+          Material sphereMaterial = shape.material;
+          if (sphere.TryGetProperty("material", out _))
+          {
+            sphereMaterial = LoadMaterial(sphere);
+          }
+          LoadSphere(solids, sphere, sphereMaterial, tMat);
+        }
+                                                                                      //Leaf = load solids inside
+        JsonElement plane;
+        if (parentElement.TryGetProperty("plane", out plane))
+        {
+          Material planeMaterial = shape.material;
+          if (plane.TryGetProperty("material", out _))
+          {
+            planeMaterial = LoadMaterial(plane);
+          }
+          LoadPlane(solids, plane, planeMaterial, tMat);
+        }
+      }
+
+      else
+      {
+        var transform = parentElement.GetProperty("transform");
+        var newTMat = tMat * GetTransformMat(transform);
+
+        var childNodes = parentElement.GetProperty("child nodes").EnumerateArray();
+        foreach (var childNode in childNodes)
+        {
+          LoadNode(shape, newTMat, childNode, solids);
+        }
+      }
+    }
+
+    static void LoadSphere(AllSolids solids, JsonElement sphere, Material newSphereMaterial, Matrix<float>? transformMatrix = null)
     {
       if (transformMatrix is null) transformMatrix = Matrix<float>.Build.DiagonalIdentity(4, 4);
 
@@ -203,19 +193,12 @@ namespace rt004
         (float)color.GetProperty("b").GetDouble()
         );
 
-      var material = sphere.GetProperty("material");
-      Material newSphereMaterial = new Material(
-        (float)material.GetProperty("diffuse coef").GetDouble(),
-        (float)material.GetProperty("reflection coef").GetDouble(),
-        (float)material.GetProperty("ambient coef").GetDouble(),
-        (float)material.GetProperty("reflection size (exponent)").GetDouble()
-        );
       Sphere newSphere = new Sphere(newSpherePos, radius, newSphereColor, newSphereMaterial);
       newSphere.Transform(transformMatrix);
       solids.AddSolid(newSphere);
     }
 
-    static void LoadPlane(AllSolids solids, JsonElement plane, Matrix<float>? transformMatrix = null)
+    static void LoadPlane(AllSolids solids, JsonElement plane, Material newPlaneMaterial, Matrix<float>? transformMatrix = null)
     {
       if (transformMatrix is null) transformMatrix = Matrix<float>.Build.DiagonalIdentity(4, 4);
 
@@ -240,17 +223,21 @@ namespace rt004
         (float)color.GetProperty("b").GetDouble()
         );
 
-      var material = plane.GetProperty("material");
-      Material newPlaneMaterial = new Material(
+      Plane newPlane = new Plane(newPlanePos, newPlaneNormal, newPlaneColor, newPlaneMaterial);
+      newPlane.Transform(transformMatrix);
+      solids.AddSolid(newPlane);
+    }
+
+    static Material LoadMaterial(JsonElement parent)
+    {
+      var material = parent.GetProperty("material");
+      Material newMaterial = new Material(
         (float)material.GetProperty("diffuse coef").GetDouble(),
         (float)material.GetProperty("reflection coef").GetDouble(),
         (float)material.GetProperty("ambient coef").GetDouble(),
         (float)material.GetProperty("reflection size (exponent)").GetDouble()
         );
-
-      Plane newPlane = new Plane(newPlanePos, newPlaneNormal, newPlaneColor, newPlaneMaterial);
-      newPlane.Transform(transformMatrix);
-      solids.AddSolid(newPlane);
+      return newMaterial;
     }
 
     static void LoadLight(Lights lights, JsonElement light)
@@ -287,8 +274,10 @@ namespace rt004
     }
     static Matrix<float> RotationXMatrix(float angle)
     {
-      float cos = (float)Math.Cos(angle);
-      float sin = (float)Math.Sin(angle);
+      double angleRad = angle * (Math.PI / 180);
+
+      float cos = (float)Math.Cos(angleRad);
+      float sin = (float)Math.Sin(angleRad);
       float[,] array = new float[4, 4]
       { {1,0,0,0},
         {0,cos,-sin,0},
@@ -299,8 +288,10 @@ namespace rt004
 
     static Matrix<float> RotationYMatrix(float angle)
     {
-      float cos = (float)Math.Cos(angle);
-      float sin = (float)Math.Sin(angle);
+      double angleRad = angle * (Math.PI / 180);
+
+      float cos = (float)Math.Cos(angleRad);
+      float sin = (float)Math.Sin(angleRad);
       float[,] array = new float[4, 4]
       { {cos,0,sin,0},
         {0,1,0,0},
@@ -311,8 +302,10 @@ namespace rt004
 
     static Matrix<float> RotationZMatrix(float angle)
     {
-      float cos = (float)Math.Cos(angle);
-      float sin = (float)Math.Sin(angle);
+      double angleRad = angle * (Math.PI / 180);
+
+      float cos = (float)Math.Cos(angleRad);
+      float sin = (float)Math.Sin(angleRad);
       float[,] array = new float[4, 4]
       { {cos,-sin,0,0},
         {sin,cos,0,0},
@@ -327,8 +320,8 @@ namespace rt004
       float translY = (float)transform.GetProperty("translate y").GetDouble();
       float translZ = (float)transform.GetProperty("translate z").GetDouble();
       float rotX = (float)transform.GetProperty("rotate x").GetDouble();
-      float rotY = (float)transform.GetProperty("rotate x").GetDouble();
-      float rotZ = (float)transform.GetProperty("rotate x").GetDouble();
+      float rotY = (float)transform.GetProperty("rotate y").GetDouble();
+      float rotZ = (float)transform.GetProperty("rotate z").GetDouble();
 
       Matrix<float> resultMatrix = Matrix<float>.Build.DenseIdentity(4, 4);
       resultMatrix *= TranslationMatrix(translX, translY, translZ);
