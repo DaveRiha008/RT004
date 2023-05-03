@@ -9,17 +9,12 @@ using MathNet.Numerics.LinearAlgebra.Single;
 
 namespace rt004
 {
-  struct ImageParameters
+  class ImageParameters
   {
-    public int width;
-    public int height;
-    public int recursionDepth;
-    public ImageParameters(int width, int height, int recursion_depth)
-    {
-      this.width = width;
-      this.height = height;
-      this.recursionDepth = recursion_depth;
-    }
+    public int width { get; set; }
+    public int height { get; set; }
+    public int recursionDepth { get; set; }
+    public Vector3 backgroundColor { get; set; }
   }
 
   struct Shape
@@ -66,7 +61,7 @@ namespace rt004
       end = false;
       return pair;
     }
-    public static void LoadConfig(StreamReader configStream, ref ImageParameters imagePar, out Camera camera, AllSolids solids, Lights lights)
+    public static void LoadConfig(StreamReader configStream, out Camera camera, AllSolids solids, Lights lights)
     {
 
       using (configStream)
@@ -76,9 +71,9 @@ namespace rt004
         using JsonDocument doc = JsonDocument.Parse(configText);
         JsonElement root = doc.RootElement;
 
-        LoadImagePar(root, imagePar);
+        LoadImagePar(root);
 
-        LoadCamera(root, out camera, imagePar);
+        LoadCamera(root, out camera);
 
         var givenShapes = root.GetProperty("shapes").EnumerateArray();
         foreach (var givenShape in givenShapes)
@@ -100,16 +95,24 @@ namespace rt004
       }
     }
 
-    static void LoadImagePar(JsonElement root, ImageParameters imagePar)
+    static void LoadImagePar(JsonElement root)
     {
+      ImageParameters imagePar = Scene.imageParameters;
       var givenImagePar = root.GetProperty("image parameters");
       imagePar.width = givenImagePar.GetProperty("width").GetInt32();
       imagePar.height = givenImagePar.GetProperty("height").GetInt32();
       imagePar.recursionDepth = givenImagePar.GetProperty("rt recursion depth").GetInt32();
+      var givenBackgroundColor = givenImagePar.GetProperty("background color");
+      imagePar.backgroundColor = new Vector3(
+        (float)givenBackgroundColor.GetProperty("r").GetDouble(),
+        (float)givenBackgroundColor.GetProperty("g").GetDouble(),
+        (float)givenBackgroundColor.GetProperty("b").GetDouble()
+        );
     }
 
-    static void LoadCamera(JsonElement root, out Camera camera, ImageParameters imagePar)
+    static void LoadCamera(JsonElement root, out Camera camera)
     {
+      ImageParameters imagePar = Scene.imageParameters;
       var givenCamera = root.GetProperty("camera");
       var givenCameraPos = givenCamera.GetProperty("position");
       Vector3 newCameraPos = new Vector3(

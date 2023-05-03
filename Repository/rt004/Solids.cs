@@ -32,8 +32,6 @@ namespace rt004
 
     public void GetClosestIntersection(Ray ray, out double? outT, out Solid? outSolid)
     {
-      const double epsilon = 1.0e-5;
-
       outT = null;
       outSolid = null;
 
@@ -41,7 +39,7 @@ namespace rt004
       {
         double? t;
         solid.GetIntersection(ray, out t);
-        if (t is not null && t > epsilon)
+        if (t is not null && t > Constants.epsilon)
         {
           if (outT is null)
           {
@@ -56,13 +54,26 @@ namespace rt004
         }
       }
     }
+
+    public Solid? GetSolidOfAPoint(Vector3 point)
+    {
+      Solid? returnSolid = null;
+      foreach(Solid solid in solids.Values)
+      {
+        if (solid.IsPointInside(point))
+        {
+          returnSolid = solid;
+        }
+      }
+      return returnSolid;
+    }
   }
   abstract class Solid
   {
     public Vector3 color;
     public Material material;
     public abstract void GetIntersection(Ray ray, out double? outT);
-    //public abstract Vector3 GetNormal(Vector3 intersectionPoint);
+    public abstract bool IsPointInside(Vector3 point);
     public abstract Vector3 GetNormal(Vector3 intersectionPoint, Vector3 origin);
     public abstract void Transform(Matrix<float> tranformMatrix);
   }
@@ -111,6 +122,28 @@ namespace rt004
       outVec = Vector3.Normalize(outVec);
       return outVec;
     }
+
+    public static Vector3? GetRefractedVector(double refractionIndex1, double refractionIndex2, Vector3 normal, Vector3 vector)
+    {
+      if(refractionIndex1 > refractionIndex2)       //Check total internal reflection
+      {
+        double critAngle = Math.Asin(refractionIndex2 / refractionIndex1);
+        double incidentAngle = Math.Acos(Vector3.Dot(vector, normal) / (GetMagnitude(vector) * GetMagnitude(normal)));      
+  
+        if(incidentAngle >= critAngle ) { return null; }
+      }
+
+      double n12 = refractionIndex1 / refractionIndex2;
+      Vector3 n = normal;
+      Vector3 l = vector;
+      Vector3 returnVec = (float)(n12 * Vector3.Dot(n, l) - Math.Sqrt(1 - (Math.Pow(n12, 2)) * (1 - Math.Pow(Vector3.Dot(n, l), 2)))) * n - (float)n12 * l;
+      return returnVec;
+    }
+
+    public static double GetMagnitude(Vector3 vector)
+    {
+      return Math.Sqrt(Math.Pow(vector.X, 2) + Math.Pow(vector.Y, 2) + Math.Pow(vector.Z, 2));
+    }
   }
 
   class Plane : Solid
@@ -125,9 +158,17 @@ namespace rt004
       this.material = material;
     }
 
-    bool ShouldReverseNormal(Vector3 rayOrigin)
+
+
+    //TODO propper equation function (for total internal reflection suffices false)
+    public override bool IsPointInside(Vector3 point)
     {
-      Ray ray = new Ray(rayOrigin, VectorCalculator.GetVectorBetween2Points((position + normal), rayOrigin));
+      return false;
+    }
+
+    bool ShouldReverseNormal(Vector3 point)
+    {
+      Ray ray = new Ray(point, VectorCalculator.GetVectorBetween2Points((position + normal), point));
       double? T;
       GetIntersection(ray, out T);
       if (T is null) return false;
@@ -223,10 +264,9 @@ namespace rt004
 
     }
 
-    bool ShouldReverseNormal(Vector3 rayOrigin)
+    public override bool IsPointInside(Vector3 point)
     {
-      const double epsilon = 1.0e-5;
-      return DistanceCalculator.GetDistance(rayOrigin, position) < r - epsilon;
+      return DistanceCalculator.GetDistance(point, position) < r - Constants.epsilon;
     }
 
     public Vector3 GetNormal(Vector3 intersectionPoint)
@@ -238,7 +278,7 @@ namespace rt004
     public override Vector3 GetNormal(Vector3 intersectionPoint, Vector3 origin)
     {
       Vector3 normal = GetNormal(intersectionPoint);
-      if (ShouldReverseNormal(origin)) return -normal;
+      if (IsPointInside(origin)) return -normal;
       return normal;
     }
 

@@ -66,13 +66,12 @@ namespace rt004
 
     private float SecondShade(Vector3 intersectionPoint)
     {
-      const double epsilon = 1.0e-4;
       Vector3 intersectionLightVector = VectorCalculator.GetVectorBetween2Points(intersectionPoint, position);
       Ray ray = new Ray(intersectionPoint, intersectionLightVector);
       double? t;
       Solid? solid;
       Scene.solids.GetClosestIntersection(ray, out t, out solid);
-      if ((t is not null || solid is not null) && (t > epsilon || t < -epsilon))
+      if ((t is not null || solid is not null) && (t > Constants.epsilon || t < -Constants.epsilon))
       {
         return 0;
       }

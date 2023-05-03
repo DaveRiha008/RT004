@@ -3,8 +3,13 @@
 
 using System.Security.Cryptography;
 
+
 namespace rt004
 {
+  public static class Constants
+  {
+    static public double epsilon = 1.0e-5;
+  }
    static class Scene
   {
     public static AllSolids solids = new AllSolids();
@@ -23,35 +28,47 @@ namespace rt004
       double? t;
       Solid? currentSolid;
       Scene.solids.GetClosestIntersection(currentRay, out t, out currentSolid);
-      if (t is null || t <= 0 || currentSolid is null) return Vector3.Zero;
+      if (t is null || t <= 0 || currentSolid is null) return Scene.imageParameters.backgroundColor;
       Vector3 currentIntersection = currentRay.PositionAfterT((float)t);
       
       Vector3 outColor = Scene.lights.GetColor(currentSolid, currentIntersection, currentRay);
 
-      Vector3 reflectVec = Vector3.Reflect(currentRay.vector, currentSolid.GetNormal(currentIntersection, currentRay.position));
 
-      Ray newRay = new Ray(currentIntersection, reflectVec);
-      if (currentSolid is Sphere && outColor.X > 0.1 && currentRecursion == 10)
-        outColor *= 1;
+
       if (currentRecursion > 0)
       {
-        Vector3 rayTracedColor = RayTrace(newRay, currentRecursion-1);
+        Vector3 reflectVec = Vector3.Reflect(currentRay.vector, currentSolid.GetNormal(currentIntersection, currentRay.position));
+
+        Ray newReflectedRay = new Ray(currentIntersection, reflectVec);
+
+        Vector3 rayTracedColor = RayTrace(newReflectedRay, currentRecursion-1);
+
         outColor += (float)Math.Pow(currentSolid.material.reflection, Scene.imageParameters.recursionDepth - currentRecursion + 1) * rayTracedColor;
+
+        Vector3 furtherIntersection = currentRay.PositionAfterT((float)(t + Constants.epsilon));
+
+        Solid? originSolid = Scene.solids.GetSolidOfAPoint(currentRay.position);
+        double originRefrIndex = 1;
+        if (originSolid is not null)
+          originRefrIndex = originSolid.material.refractionIndex; 
+        Solid? outsideSolid = Scene.solids.GetSolidOfAPoint(furtherIntersection);
+        double outsideRefrIndex = 1;
+        if (outsideSolid is not null) { outsideRefrIndex = outsideSolid.material.refractionIndex; }
+
+        Vector3? refractVec = VectorCalculator.GetRefractedVector(originRefrIndex, outsideRefrIndex, currentSolid.GetNormal(currentIntersection, currentRay.position), currentRay.vector);
+        if (refractVec is not null)
+        {
+
+          Ray newRefractedRay = new Ray(furtherIntersection, (Vector3)refractVec);
+
+          Vector3 refractedColor = RayTrace(newRefractedRay, currentRecursion-1);
+
+          outColor += (float)Math.Pow(currentSolid.material.transparency, Scene.imageParameters.recursionDepth - currentRecursion + 1) * refractedColor;
+
+        }
+
+
       }
-
-      //for (int i = 0; i < currentRecursion; i++)
-      //{
-      //  Vector3 reflectVec = Vector3.Reflect(currentRay.vector, currentSolid.GetNormal(currentIntersection, currentRay.position));
-
-      //  currentRay = new Ray(currentIntersection, reflectVec);
-      //  double? t1;
-      //  Solid? newSolid;
-      //  Scene.solids.GetClosestIntersection(currentRay, out t1, out newSolid);
-      //  if (newSolid is null || t1 is null) return outColor;
-      //  currentIntersection = currentRay.PositionAfterT((float)t1);
-      //  outColor += (float)Math.Pow(2 * currentSolid.material.reflection, 1) * Scene.lights.GetColor(currentSolid, currentIntersection, currentRay);
-      //  currentSolid = newSolid;
-      //}
       return outColor;
     }
 
@@ -84,7 +101,7 @@ namespace rt004
     {
       // Parameters.
       // TODO: parse command-line arguments and/or your config file.
-      ImageParameters imPar = new ImageParameters(600, 450, 10);
+      ImageParameters imPar = new ImageParameters { width = 600, height=450, recursionDepth=10, backgroundColor = Vector3.One };
       Scene.imageParameters = imPar;
       string fileName = "demo.pfm";
       //Console.WriteLine("Input your config file name (path): ");
@@ -118,7 +135,7 @@ namespace rt004
       //lights.AddLight(new Vector3(-0.2f, 0.1f, 1.0f), Vector3.One, 1);
       //lights.AddAmbientLight(0.5f);
 
-      ConfigInputHandler.LoadConfig(configStream, ref imPar, out Scene.camera, Scene.solids, Scene.lights);
+      ConfigInputHandler.LoadConfig(configStream, out Scene.camera, Scene.solids, Scene.lights);
 
       FloatImage fi = new FloatImage(imPar.width, imPar.height, 3);
 

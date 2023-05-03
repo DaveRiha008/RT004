@@ -2,7 +2,12 @@
   "image parameters": {
     "width": 1920,
     "height": 1080,
-    "rt recursion depth": 10
+    "rt recursion depth": 10,
+    "background color": {
+      "r": 0.0,
+      "g": 0.0,
+      "b": 0.0
+    }
   },
   "camera": {
     "position": {
@@ -40,8 +45,8 @@
         }
       },
       "material": {
-        "diffuse coef": 0.4,
-        "reflection coef": 0.55,
+        "diffuse coef": 0.9,
+        "reflection coef": 0.05,
         "ambient coef": 0.05,
         "reflection size (exponent)": 155,
         "transparency": 0,
@@ -140,11 +145,11 @@
                     "b": 0
                   },
                   "material": {
-                    "diffuse coef": 0.9,
-                    "reflection coef": 0.01,
+                    "diffuse coef": 0.75,
+                    "reflection coef": 0.2,
                     "ambient coef": 0.05,
                     "reflection size (exponent)": 155,
-                    "transparency": 1,
+                    "transparency": 0.9,
                     "refraction index": 1.2
                   }
                 }
