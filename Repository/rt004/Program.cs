@@ -1,4 +1,5 @@
-﻿using System.Numerics;
+﻿using MathNet.Numerics.Random;
+using System.Numerics;
 #nullable enable
 
 using System.Security.Cryptography;
@@ -56,7 +57,7 @@ namespace rt004
         if (outsideSolid is not null) { outsideRefrIndex = outsideSolid.material.refractionIndex; }
 
         Vector3? refractVec = VectorCalculator.GetRefractedVector(originRefrIndex, outsideRefrIndex, currentSolid.GetNormal(currentIntersection, currentRay.position), currentRay.vector);
-        if (refractVec is not null)
+        if (refractVec is not null && currentSolid.material.transparency > 0)
         {
 
           Ray newRefractedRay = new Ray(furtherIntersection, (Vector3)refractVec);
@@ -72,10 +73,62 @@ namespace rt004
       return outColor;
     }
 
+    struct Vector2d
+    {
+      public double x { get; set; }
+      public double y { get; set; }
+    }
+    struct PixelSegment
+    {
+      public Vector2d left { get; set; }
+      public Vector2d right { get; set; }
+      public Vector2d top { get; set; }
+      public Vector2d bottom { get; set; }
+    }
+
+    static Vector3 AntiAlias(float x,  float y, Random random)
+    {
+      int spp = Scene.imageParameters.spp;
+      int segmentsInRow = (int)Math.Sqrt(spp);
+      double pixelSizeX = 2d / (double)Scene.imageParameters.width;
+      double pixelSizeY = 2d / (double)Scene.imageParameters.height;
+      double segmentSizeX = pixelSizeX / segmentsInRow;
+      double segmentSizeY = pixelSizeY / segmentsInRow;
+
+      List<PixelSegment> segments = new List<PixelSegment>();
+      for (double i = (double)-segmentsInRow/2; i < (double)segmentsInRow/2; i++)
+      {
+        for (double j = (double)-segmentsInRow/2; j < (double)segmentsInRow/2; j++)
+        {
+          segments.Add(new PixelSegment
+          {
+            left = new Vector2d { x = x + i * segmentSizeX, y = y + j * segmentSizeY + segmentSizeY/2 },
+            right = new Vector2d { x = x + i * segmentSizeX - segmentSizeX, y = y + j * segmentSizeY + segmentSizeY/2 },
+            top = new Vector2d { x = x + i * segmentSizeX + segmentSizeX/2, y = y + j * segmentSizeY },
+            bottom = new Vector2d { x = x + i * segmentSizeX + segmentSizeX / 2, y = y + j * segmentSizeY - segmentSizeY}
+          });
+        }
+      }
+
+      Vector3 outColor = Vector3.Zero;
+
+      foreach(PixelSegment segment in segments)
+      {
+        float newX = (float)(segment.left.x - random.NextDouble() * segmentSizeX);
+        float newY = (float)(segment.bottom.y + random.NextDouble() * segmentSizeY);
+
+        int rayIndex = Scene.camera.CreateRay(newX, newY);
+        Ray ray = Scene.camera.GetRay(rayIndex);
+        outColor += RayTrace(ray, Scene.imageParameters.recursionDepth);
+        Scene.camera.RemoveRay(rayIndex);
+      }
+
+      return outColor/(float)Math.Pow(segmentsInRow,2);
+    }
 
     static void CreateHDRImage(FloatImage fi, ImageParameters imPar, Camera camera)
     {
-      int rayIndex;
+      Random random = new Random();
       for (int i = 0; i < imPar.width; i++)
       {
         for (int j = 0; j < imPar.height; j++)
@@ -85,14 +138,24 @@ namespace rt004
           float normalizedX = (-2.0f * i) / imPar.width + 1f;  //normalize for x and y to go from -1 to +1
           float normalizedY = (-2.0f * j) / imPar.height + 1f;
 
-          rayIndex = camera.CreateRay(normalizedX, normalizedY); 
-          Ray ray = camera.GetRay(rayIndex);
+          float[] color;
 
-          Vector3 colorVec = RayTrace(ray, imPar.recursionDepth);
-          float[] color = new float[3] { colorVec.X, colorVec.Y, colorVec.Z, };
+          if (imPar.aa)
+          {
+            Vector3 AAColor = AntiAlias(normalizedX, normalizedY, random);
+            color = new float[3] { AAColor.X, AAColor.Y, AAColor.Z };
+          }
+          else
+          {
+            int rayIndex = camera.CreateRay(normalizedX, normalizedY);
+            Ray ray = camera.GetRay(rayIndex);
+
+            Vector3 colorVec = RayTrace(ray, imPar.recursionDepth);
+            color = new float[3] { colorVec.X, colorVec.Y, colorVec.Z, };
+            camera.RemoveRay(rayIndex);
+          }
 
           fi.PutPixel(i, j, color);
-          camera.RemoveRay(rayIndex);
         }
       }
     }

@@ -14,6 +14,8 @@ namespace rt004
     public int width { get; set; }
     public int height { get; set; }
     public int recursionDepth { get; set; }
+    public int spp { get; set; }
+    public bool aa { get; set; } 
     public Vector3 backgroundColor { get; set; }
   }
 
@@ -102,6 +104,8 @@ namespace rt004
       imagePar.width = givenImagePar.GetProperty("width").GetInt32();
       imagePar.height = givenImagePar.GetProperty("height").GetInt32();
       imagePar.recursionDepth = givenImagePar.GetProperty("rt recursion depth").GetInt32();
+      imagePar.spp = givenImagePar.GetProperty("spp").GetInt32();
+      imagePar.aa = givenImagePar.GetProperty("aa").GetBoolean();
       var givenBackgroundColor = givenImagePar.GetProperty("background color");
       imagePar.backgroundColor = new Vector3(
         (float)givenBackgroundColor.GetProperty("r").GetDouble(),

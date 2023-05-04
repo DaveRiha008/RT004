@@ -1,8 +1,10 @@
 {
   "image parameters": {
-    "width": 1920,
-    "height": 1080,
+    "width": 800,
+    "height": 450,
     "rt recursion depth": 10,
+    "spp": 10,
+    "aa": true,
     "background color": {
       "r": 0.0,
       "g": 0.0,
@@ -11,13 +13,13 @@
   },
   "camera": {
     "position": {
-      "x": 0.5,
-      "y": 0.5,
-      "z": 0
+      "x": 0.1,
+      "y": 0.2,
+      "z": -0.1
     },
     "view vector": {
       "x": 0,
-      "y": -0.5,
+      "y": 0,
       "z": 1
     },
     "up vector": {
@@ -32,7 +34,7 @@
         "is leaf": true,
         "sphere": {
           "position": {
-            "x": 0.4,
+            "x": 0.1,
             "y": 0.4,
             "z": 1.8
           },
@@ -74,7 +76,7 @@
           },
           "material": {
             "diffuse coef": 0.9,
-            "reflection coef": 0.01,
+            "reflection coef": 0.05,
             "ambient coef": 0.05,
             "reflection size (exponent)": 155,
             "transparency": 0,
@@ -108,7 +110,7 @@
             "sphere": {
               "position": {
                 "x": 0.4,
-                "y": 0.1,
+                "y": 0.15,
                 "z": 1.0
               },
               "radius": 0.1,
@@ -116,6 +118,30 @@
                 "r": 1,
                 "g": 0,
                 "b": 0
+              }
+            }
+          },
+          {
+            "is leaf": true,
+            "sphere": {
+              "position": {
+                "x": -0.2,
+                "y": 1.25,
+                "z": 2.5
+              },
+              "radius": 1,
+              "color": {
+                "r": 0,
+                "g": 0,
+                "b": 0
+              },
+              "material": {
+                "diffuse coef": 0.0,
+                "reflection coef": 1,
+                "ambient coef": 0.0,
+                "reflection size (exponent)": 155,
+                "transparency": 0,
+                "refraction index": 1
               }
             }
           },
@@ -159,7 +185,7 @@
         ]
       },
       "material": {
-        "diffuse coef": 0.4,
+        "diffuse coef": 0.45,
         "reflection coef": 0.5,
         "ambient coef": 0.05,
         "reflection size (exponent)": 155,
