@@ -1,7 +1,7 @@
 {
   "image parameters": {
-    "width": 800,
-    "height": 450,
+    "width": 1920,
+    "height": 1080,
     "rt recursion depth": 10,
     "spp": 10,
     "aa": true,

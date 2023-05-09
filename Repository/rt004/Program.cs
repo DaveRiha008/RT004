@@ -188,15 +188,7 @@ namespace rt004
       // TODO: put anything interesting into the image.
       // TODO: use fi.PutPixel() function, pixel should be a float[3] array [r, G, B]
 
-      //     MANUAL PARAMETERS (IGNORE CONFIG)
-      //imPar.width = 1920;
-      //imPar.height = 1080;
-      //solids.AddSolid(new Sphere(new Vector3(0.4f, 0.4f, 1.8f), 0.1f, new Vector3(0.5f, 0.5f, 0), new Material()));
-      //solids.AddSolid(new Sphere(new Vector3(0.4f, 0.1f, 1f), 0.1f, new Vector3(1f, 0f, 0), new Material()));
-      //solids.AddSolid(new Plane(new Vector3(-0.0f, 0.0f, 1f), Vector3.Normalize(new Vector3(0, 1, -0.2f)), new Vector3(0, 0.3f, 1), new Material(0.9f, 0.05f, 0.05f)));
-      //lights.AddLight(new Vector3(-0.5f, 0.5f, 0.2f), Vector3.One, 2);
-      //lights.AddLight(new Vector3(-0.2f, 0.1f, 1.0f), Vector3.One, 1);
-      //lights.AddAmbientLight(0.5f);
+
 
       ConfigInputHandler.LoadConfig(configStream, out Scene.camera, Scene.solids, Scene.lights);
 
