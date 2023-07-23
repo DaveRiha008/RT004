@@ -1,16 +1,7 @@
-﻿//using System.Numerics;
-#nullable enable
+﻿#nullable enable
 
-using Microsoft.VisualBasic;
-using System;
-using System.Drawing;
-using System.Dynamic;
 using System.Numerics;
-using System.Runtime.InteropServices;
-using System.Security.Cryptography;
-using MathNet.Numerics;
 using MathNet.Numerics.LinearAlgebra;
-using MathNet.Numerics.Distributions;
 
 namespace rt004
 {
@@ -70,92 +61,30 @@ namespace rt004
   }
   abstract class Solid
   {
-    public Vector3 color;
-    public Material material;
+    //Warning: All property names dependent on json config
+
+    public Color? Color { get; set; }
+    public Material Material { get; set; } = new Material(); 
     public abstract void GetIntersection(Ray ray, out double? outT);
     public abstract bool IsPointInside(Vector3 point);
     public abstract Vector3 GetNormal(Vector3 intersectionPoint, Vector3 origin);
     public abstract void Transform(Matrix<float> tranformMatrix);
   }
-  static class DistanceCalculator
-  {
-    static public double GetDistance(Vector3 v1, Vector3 v2)
-    {
-      double xDistance = Math.Abs(v1.X - v2.X);
-      double yDistance = Math.Abs(v1.Y - v2.Y);
-      double zDistance = Math.Abs(v1.Z - v2.Z);
-      double distance = Math.Sqrt(xDistance*xDistance+yDistance*yDistance); 
-      distance = Math.Sqrt(distance*distance+zDistance*zDistance);
-      return distance;
-    }
-  }
-  static class QuadraticEquationSolver
-  {
-    static public void Solve(double a, double b, double c, out double? x1, out double? x2)
-    {
-      if (a == 0)
-      {
-        x1 = (-c) / b;
-        x2 = null;
-        return;
-      }
-      double D = b * b - 4 * a * c;
-      if(D == 0)
-      {
-        x1 = (-b) / (2*a);
-        x2 = null; return;
-      }
-      if(D < 0) { x1 = null; x2 = null; return; }
-      else
-      {
-        x1 = ((-b) + Math.Sqrt(D)) / (2 * a);
-        x2 = ((-b) - Math.Sqrt(D)) / (2 * a);
-        return;
-      }
-    }
-  }
-  static class VectorCalculator
-  {
-    public static Vector3 GetVectorBetween2Points(Vector3 point1, Vector3 point2)
-    {
-      Vector3 outVec = new Vector3(point2.X - point1.X, point2.Y - point1.Y, point2.Z - point1.Z);
-      outVec = Vector3.Normalize(outVec);
-      return outVec;
-    }
 
-    public static Vector3? GetRefractedVector(double refractionIndex1, double refractionIndex2, Vector3 normal, Vector3 vector)
-    {
-      if(refractionIndex1 > refractionIndex2)       //Check total internal reflection
-      {
-        double critAngle = Math.Asin(refractionIndex2 / refractionIndex1);
-        double incidentAngle = Math.Acos(Vector3.Dot(vector, normal) / (GetMagnitude(vector) * GetMagnitude(normal)));      
-  
-        if(incidentAngle >= critAngle ) { return null; }
-      }
-
-      double n12 = refractionIndex1 / refractionIndex2;
-      Vector3 n = normal;
-      Vector3 l = vector;
-      Vector3 returnVec = (float)(n12 * Vector3.Dot(n, l) - Math.Sqrt(1 - (Math.Pow(n12, 2)) * (1 - Math.Pow(Vector3.Dot(n, l), 2)))) * n - (float)n12 * l;
-      return returnVec;
-    }
-
-    public static double GetMagnitude(Vector3 vector)
-    {
-      return Math.Sqrt(Math.Pow(vector.X, 2) + Math.Pow(vector.Y, 2) + Math.Pow(vector.Z, 2));
-    }
-  }
 
   class Plane : Solid
   {
-    Vector3 position = new();
-    Vector3 normal = new();
-    public Plane(Vector3 position, Vector3 normal, Vector3 color, Material material)
+    //Warning: All property names dependent on json config
+
+    public Position3D Position { get; set; } = Vector3.Zero;
+    public Position3D Normal { get; set; } = Vector3.UnitY;
+    
+    public Plane(Position3D position, Position3D normal, Color color, Material material)
     {
-      this.position = position;
-      this.normal = Vector3.Normalize(normal);
-      this.color = color;
-      this.material = material;
+      this.Position = position;
+      this.Normal = Vector3.Normalize(normal);
+      this.Color = color;
+      this.Material = material;
     }
 
 
@@ -168,7 +97,7 @@ namespace rt004
 
     bool ShouldReverseNormal(Vector3 point)
     {
-      Ray ray = new Ray(point, VectorCalculator.GetVectorBetween2Points((position + normal), point));
+      Ray ray = new Ray(point, VectorCalculator.GetVectorBetween2Points((Position + Normal), point));
       double? T;
       GetIntersection(ray, out T);
       if (T is null) return false;
@@ -177,19 +106,19 @@ namespace rt004
 
     public Vector3 GetNormal(Vector3 intersectionPoint)
     {
-      return normal;
+      return Normal;
     }
     public override Vector3 GetNormal(Vector3 intersectionPoint, Vector3 origin)
     {
-      if (ShouldReverseNormal(origin)) return normal;
-      return -normal;
+      if (ShouldReverseNormal(origin)) return Normal;
+      return -Normal;
     }
 
     public override void GetIntersection(Ray ray, out double? outT)
     {
       outT = null;
-      Vector3 p_0 = position;
-      Vector3 n = -normal;
+      Vector3 p_0 = Position;
+      Vector3 n = -Normal;
       Vector3 l_0 = ray.position;
       Vector3 l = ray.vector;
       float denominator = Vector3.Dot(l, n);
@@ -204,51 +133,53 @@ namespace rt004
 
     public override void Transform(Matrix<float> tranformMatrix)
     {
-      float[] arrayPos = new float[4] { position.X, position.Y, position.Z, 1 };
+      float[] arrayPos = new float[4] { Position.x, Position.y, Position.z, 1 };
       var position4d = MathNet.Numerics.LinearAlgebra.Vector<float>.Build.DenseOfArray(arrayPos);
       var newPos4d = position4d * tranformMatrix;
-      position.X = newPos4d[0] / newPos4d[3];
-      position.Y = newPos4d[1] / newPos4d[3];
-      position.Z = newPos4d[2] / newPos4d[3];
+      Position = new Position3D(newPos4d[0], newPos4d[1], newPos4d[2]);
+      Position = Position / newPos4d[3];
 
-      float[] arrayNor = new float[4] { normal.X, normal.Y, normal.Z, 1 };
+
+      float[] arrayNor = new float[4] { Normal.x, Normal.y, Normal.z, 1 };
       var normal4d = MathNet.Numerics.LinearAlgebra.Vector<float>.Build.DenseOfArray(arrayNor);
       var newNor4d = normal4d * tranformMatrix;
-      normal.X = newNor4d[0] / newNor4d[3];
-      normal.Y = newNor4d[1] / newNor4d[3];
-      normal.Z = newNor4d[2] / newNor4d[3];
+      Normal = new Position3D(newNor4d[0], newNor4d[1], newNor4d[2]);
+      Normal = Normal / newNor4d[3];
+
     }
   }
 
   class Sphere:Solid
   {
-    Vector3 position = new();
-    float r;
-    public Sphere(Vector3 position, float r, Vector3 color, Material material)
+    //Warning: All property names dependent on json config
+
+    public Position3D Position { get; private set; } = Vector3.Zero;
+    public float Radius { get; private set; } = 0;
+    public Sphere(Position3D position, float radius, Color color, Material material)
     {
-      this.position = position;
-      this.r = r;
-      this.color = color;
-      this.material = material;
+      this.Position = position;
+      this.Radius = radius;
+      this.Color = color;
+      this.Material = material;
     }
 
     public override void GetIntersection(Ray ray, out double? outT)
     {
       outT = null;
-      float cx = position.X;
-      float cy = position.Y;
-      float cz = position.Z;
+      float cx = Position.x;
+      float cy = Position.y;
+      float cz = Position.z;
       float dx = ray.vector.X;
       float dy = ray.vector.Y;
       float dz = ray.vector.Z;
-      float x0 = ray.position.X;
-      float y0 = ray.position.Y;
-      float z0 = ray.position.Z;
+      float x0 = ray.position.x;
+      float y0 = ray.position.y;
+      float z0 = ray.position.z;
 
       float a = dx * dx + dy * dy + dz * dz;
       float b = 2 * dx * (x0 - cx) + 2 * dy * (y0 - cy) + 2 * dz * (z0 - cz);
       float c = cx * cx + cy * cy + cz * cz + x0 * x0 + y0 * y0 + z0 * z0 +
-                  -2 * (cx * x0 + cy * y0 + cz * z0) - r*r;
+                  -2 * (cx * x0 + cy * y0 + cz * z0) - Radius*Radius;
       
       float d = b * b - 4 * a * c;
 
@@ -266,12 +197,12 @@ namespace rt004
 
     public override bool IsPointInside(Vector3 point)
     {
-      return DistanceCalculator.GetDistance(point, position) < r - Constants.epsilon;
+      return DistanceCalculator.GetDistance(point, Position) < Radius - Constants.epsilon;
     }
 
     public Vector3 GetNormal(Vector3 intersectionPoint)
     {
-      Vector3 normal = new Vector3((intersectionPoint.X-position.X)/r, (intersectionPoint.Y-position.Y)/r, (intersectionPoint.Z-position.Z)/r);
+      Vector3 normal = new Vector3((intersectionPoint.X-Position.x)/Radius, (intersectionPoint.Y-Position.y)/Radius, (intersectionPoint.Z-Position.z)/Radius);
       normal = Vector3.Normalize(normal);
       return normal;
     }
@@ -284,12 +215,11 @@ namespace rt004
 
     public override void Transform(Matrix<float> tranformMatrix)
     {
-      float[] arrayPos = new float[4] { position.X, position.Y, position.Z, 1 };
+      float[] arrayPos = new float[4] { Position.x, Position.y, Position.z, 1 };
       var position4d = MathNet.Numerics.LinearAlgebra.Vector<float>.Build.DenseOfArray(arrayPos);
       var newPos4d = position4d * tranformMatrix;
-      position.X = newPos4d[0] / newPos4d[3];
-      position.Y = newPos4d[1] / newPos4d[3];
-      position.Z = newPos4d[2] / newPos4d[3];
+      Position = new Position3D(newPos4d[0], newPos4d[1], newPos4d[2]);
+      Position /= newPos4d[3];
     }
   }
 }

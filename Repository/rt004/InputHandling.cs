@@ -1,287 +1,178 @@
 ﻿#nullable enable
 
-using System.Numerics;
 using System.Text.Json;
-using System.Text.Json.Nodes;
-using MathNet.Numerics;
 using MathNet.Numerics.LinearAlgebra;
-using MathNet.Numerics.LinearAlgebra.Single;
 
 namespace rt004
 {
-  class ImageParameters
+
+  class ConfigData
   {
-    public int width { get; set; }
-    public int height { get; set; }
-    public int recursionDepth { get; set; }
-    public int spp { get; set; }
-    public bool aa { get; set; } 
-    public Vector3 backgroundColor { get; set; }
+    //Warning: All property names dependent on json config
+    public ImageParameters? ImageParameters { get; set; } 
+    public Camera? Camera { get; set; }
+
+    public ShapeNode[] Shapes { get; set; } = new ShapeNode[0];
+
+    public LightsInfo? Lights { get; set; }
+
+
   }
-
-  struct Shape
-  {
-    public Material material;
-
-    public Shape(Material material)
-    {
-      this.material = material;
-    }
-  }
-
 
 
   class ConfigInputHandler
   {
-    public StreamReader input;
-    public ConfigInputHandler(StreamReader input)
+
+    public static void LoadConfig(StreamReader configStream, Scene scene)
     {
-      this.input = input;
+      string configText = configStream.ReadToEnd();
+      using JsonDocument doc = JsonDocument.Parse(configText);
+
+      ConfigData? data = (ConfigData?)JsonSerializer.Deserialize(doc, typeof(ConfigData), new JsonSerializerOptions() { PropertyNameCaseInsensitive = true, IncludeFields = true });
+      if (data is null) throw new JsonException("Error when deserializing json document");
+      JsonElement root = doc.RootElement;
+
+
+      if (data.ImageParameters is null) Console.WriteLine("Warning: No image parameters found - using default values");
+      LoadImageParNew(data.ImageParameters, scene);
+
+
+      if (data.Camera is not null) LoadCameraNew(data.Camera, scene);
+      else throw new PropertyNotDescribedException("Camera data not found");
+
+      if (data.Shapes.Length <= 0) Console.WriteLine("Warning: No shapes found - intended?");
+      ShapeHierarchy.LoadShapes(data.Shapes, scene);
+
+      if (data.Lights is null) Console.WriteLine("Warning: No lights information found - intended?");
+      LoadLightNew(data.Lights, scene);
     }
-    public KeyValuePair<string, string>? GetPair(out bool end)
+  
+
+
+    static void LoadImageParNew(ImageParameters? imageParameters, Scene scene)
     {
-      
-      string? line = input.ReadLine();
-      if (line is null)
-      {
-        end = true;
-        return null;
-      }
-      string[] splitLine = line.Split('=');
-      if (splitLine[0][0] == '#')
-      {
-        end = false;
-        return null;
-      }
-      if (splitLine.Length != 2)
-      {
-        if (splitLine.Length == 1 && splitLine[0] == "end") end = true;
-        else end = false;
-        return null;
-      }
-      var pair = new KeyValuePair<string, string>(splitLine[0], splitLine[1]);
-      end = false;
-      return pair;
+      if (imageParameters is null) scene.imageParameters = new ImageParameters();
+      else scene.imageParameters = (ImageParameters)imageParameters;
     }
-    public static void LoadConfig(StreamReader configStream, out Camera camera, AllSolids solids, Lights lights)
+
+
+    static void LoadCameraNew(Camera camera, Scene scene)
     {
+      scene.camera = camera;
+      scene.camera.AspectRatio = (float)scene.imageParameters.Width / (float)scene.imageParameters.Height;
+    }
 
-      using (configStream)
+
+    class ShapeHierarchy
+    {
+      public static void LoadShapes(ShapeNode[] shapes, Scene scene)
       {
-        //ConfigInputHandler config = new ConfigInputHandler(configStream);
-        string configText = configStream.ReadToEnd();
-        using JsonDocument doc = JsonDocument.Parse(configText);
-        JsonElement root = doc.RootElement;
-
-        LoadImagePar(root);
-
-        LoadCamera(root, out camera);
-
-        var givenShapes = root.GetProperty("shapes").EnumerateArray();
-        foreach (var givenShape in givenShapes)
+        foreach (ShapeNode shape in shapes)
         {
-          Shape shape = new Shape() { material = LoadMaterial(givenShape) };
-          JsonElement rootNode = givenShape.GetProperty("root node");
-          LoadNode(shape, Matrix<float>.Build.DenseIdentity(4, 4), rootNode, solids);
-        }
-
-        var givenLights = root.GetProperty("lights");
-        var givenAmbient = givenLights.GetProperty("ambient light");
-        lights.AddAmbientLight((float)givenAmbient.GetProperty("intensity").GetDouble());
-
-        var givenLightSources = givenLights.GetProperty("light sources").EnumerateArray();
-        foreach ( var light in givenLightSources)
-        {
-          LoadLight(lights, light);
-        }
-      }
-    }
-
-    static void LoadImagePar(JsonElement root)
-    {
-      ImageParameters imagePar = Scene.imageParameters;
-      var givenImagePar = root.GetProperty("image parameters");
-      imagePar.width = givenImagePar.GetProperty("width").GetInt32();
-      imagePar.height = givenImagePar.GetProperty("height").GetInt32();
-      imagePar.recursionDepth = givenImagePar.GetProperty("rt recursion depth").GetInt32();
-      imagePar.spp = givenImagePar.GetProperty("spp").GetInt32();
-      imagePar.aa = givenImagePar.GetProperty("aa").GetBoolean();
-      var givenBackgroundColor = givenImagePar.GetProperty("background color");
-      imagePar.backgroundColor = new Vector3(
-        (float)givenBackgroundColor.GetProperty("r").GetDouble(),
-        (float)givenBackgroundColor.GetProperty("g").GetDouble(),
-        (float)givenBackgroundColor.GetProperty("b").GetDouble()
-        );
-    }
-
-    static void LoadCamera(JsonElement root, out Camera camera)
-    {
-      ImageParameters imagePar = Scene.imageParameters;
-      var givenCamera = root.GetProperty("camera");
-      var givenCameraPos = givenCamera.GetProperty("position");
-      Vector3 newCameraPos = new Vector3(
-        (float)givenCameraPos.GetProperty("x").GetDouble(),
-        (float)givenCameraPos.GetProperty("y").GetDouble(),
-        (float)givenCameraPos.GetProperty("z").GetDouble()
-        );
-
-      var givenCameraViewVec = givenCamera.GetProperty("view vector");
-      Vector3 newCameraViewVec = new Vector3(
-        (float)givenCameraViewVec.GetProperty("x").GetDouble(),
-        (float)givenCameraViewVec.GetProperty("y").GetDouble(),
-        (float)givenCameraViewVec.GetProperty("z").GetDouble()
-        );
-
-      var givenCameraUpVec = givenCamera.GetProperty("up vector");
-      Vector3 newCameraUpVec = new Vector3(
-        (float)givenCameraUpVec.GetProperty("x").GetDouble(),
-        (float)givenCameraUpVec.GetProperty("y").GetDouble(),
-        (float)givenCameraUpVec.GetProperty("z").GetDouble()
-        );
-      double newCameraAspectRatio = (double)imagePar.width / (double)imagePar.height;
-      camera = new Camera(newCameraPos, newCameraViewVec, newCameraUpVec, aspectRatio: newCameraAspectRatio);
-    }
-
-    static void LoadNode(Shape shape, Matrix<float> tMat, JsonElement parentElement, AllSolids solids)
-    {
-      bool is_leaf = parentElement.GetProperty("is leaf").GetBoolean();
-      if (is_leaf)
-      {
-        JsonElement sphere;
-        if (parentElement.TryGetProperty("sphere", out sphere))
-        {
-          Material sphereMaterial = shape.material;
-          if (sphere.TryGetProperty("material", out _))
-          {
-            sphereMaterial = LoadMaterial(sphere);
-          }
-          LoadSphere(solids, sphere, sphereMaterial, tMat);
-        }
-                                                                                      //Leaf = load solids inside
-        JsonElement plane;
-        if (parentElement.TryGetProperty("plane", out plane))
-        {
-          Material planeMaterial = shape.material;
-          if (plane.TryGetProperty("material", out _))
-          {
-            planeMaterial = LoadMaterial(plane);
-          }
-          LoadPlane(solids, plane, planeMaterial, tMat);
+          LoadShape(shape, scene);
         }
       }
 
-      else
+      static void LoadShape(ShapeNode rootNode, Scene scene)
       {
-        var transform = parentElement.GetProperty("transform");
-        var newTMat = tMat * GetTransformMat(transform);
-
-        var childNodes = parentElement.GetProperty("child nodes").EnumerateArray();
-        foreach (var childNode in childNodes)
+        Matrix<float> transMatrix = Matrix<float>.Build.DenseIdentity(4, 4);
+        transMatrix *= GetTransformMatNew(rootNode.Transform);
+        if (rootNode.Sphere is not null)
+          LoadSphereNew(rootNode, transMatrix, scene);
+        if (rootNode.Plane is not null)
+          LoadPlaneNew(rootNode, transMatrix, scene);
+        foreach (ShapeNode child in rootNode.ChildNodes)
         {
-          LoadNode(shape, newTMat, childNode, solids);
+          LoadNodeChild(rootNode, child, transMatrix, scene);
         }
       }
+
+      static void LoadNodeChild(ShapeNode parent, ShapeNode child, Matrix<float> tMat, Scene scene)
+      {
+        Matrix<float> transMatrix = tMat * GetTransformMatNew(child.Transform);
+        if (child.Material is null)
+          child.Material = parent.Material;
+        if (child.Color is null)
+          child.Color = parent.Color;
+        if (child.Sphere is not null)
+          LoadSphereNew(child, transMatrix, scene);
+        if (child.Plane is not null)
+          LoadPlaneNew(child, transMatrix, scene);
+        foreach (ShapeNode child2 in child.ChildNodes)
+        {
+          LoadNodeChild(child, child2, transMatrix, scene);
+        }
+      }
+
+
+      static void LoadSphereNew(ShapeNode node, Matrix<float> tMat, Scene scene)
+      {
+        if (node.Sphere is null) throw new NullReferenceException("Sphere is null in LoadSphere function");
+
+        if (node.Sphere.Color is null)
+        {
+          if (node.Color is not null)
+            node.Sphere.Color = node.Color;
+          else throw new PropertyNotDescribedException("Sphere color not found");
+        }
+        if (node.Sphere.Material is null)
+        {
+          if (node.Material is not null)
+            node.Sphere.Material = node.Material;
+          else throw new PropertyNotDescribedException("Sphere material not found");
+        }
+        node.Sphere.Transform(tMat);
+        scene.solids.AddSolid(node.Sphere);
+      }
+
+
+      static void LoadPlaneNew(ShapeNode node, Matrix<float> tMat, Scene scene)
+      {
+        if (node.Plane is null) throw new NullReferenceException("Plane is null in LoadSphere function");
+
+
+        if (node.Plane.Color is null)
+        {
+          if (node.Color is not null)
+            node.Plane.Color = node.Color;
+          else throw new PropertyNotDescribedException("Plane color not found");
+        }
+        if (node.Plane.Material is null)
+        {
+          if (node.Material is not null)
+            node.Plane.Material = node.Material;
+          else throw new PropertyNotDescribedException("Plane material not found");
+        }
+        node.Plane.Transform(tMat);
+        scene.solids.AddSolid(node.Plane);
+      }
+
     }
 
-    static void LoadSphere(AllSolids solids, JsonElement sphere, Material newSphereMaterial, Matrix<float>? transformMatrix = null)
+
+    static void LoadLightNew(LightsInfo? lightsInfo, Scene scene)
     {
-      if (transformMatrix is null) transformMatrix = Matrix<float>.Build.DiagonalIdentity(4, 4);
+      LightsInfo nonNullInfo;
+      if (lightsInfo is null) nonNullInfo = new LightsInfo(); 
+      else nonNullInfo = (LightsInfo)lightsInfo;
 
-      var pos = sphere.GetProperty("position");
-      Vector3 newSpherePos = new Vector3(
-        (float)pos.GetProperty("x").GetDouble(),
-        (float)pos.GetProperty("y").GetDouble(),
-        (float)pos.GetProperty("z").GetDouble()
-        );
+      scene.lights.AddAmbientLight(nonNullInfo.AmbientLight.intensity);
 
-      float radius = (float)sphere.GetProperty("radius").GetDouble();
-
-      var color = sphere.GetProperty("color");
-      Vector3 newSphereColor = new Vector3(
-        (float)color.GetProperty("r").GetDouble(),
-        (float)color.GetProperty("g").GetDouble(),
-        (float)color.GetProperty("b").GetDouble()
-        );
-
-      Sphere newSphere = new Sphere(newSpherePos, radius, newSphereColor, newSphereMaterial);
-      newSphere.Transform(transformMatrix);
-      solids.AddSolid(newSphere);
+      if (nonNullInfo.LightSources.Length <= 0) Console.WriteLine("Warning: no light sources found - intended?");
+      foreach (LightSource light in nonNullInfo.LightSources)
+      {
+        scene.lights.AddLight(light.Position, light.Color, light.Intensity);
+      }
     }
-
-    static void LoadPlane(AllSolids solids, JsonElement plane, Material newPlaneMaterial, Matrix<float>? transformMatrix = null)
-    {
-      if (transformMatrix is null) transformMatrix = Matrix<float>.Build.DiagonalIdentity(4, 4);
-
-      var pos = plane.GetProperty("position");
-      Vector3 newPlanePos = new Vector3(
-        (float)pos.GetProperty("x").GetDouble(),
-        (float)pos.GetProperty("y").GetDouble(),
-        (float)pos.GetProperty("z").GetDouble()
-        );
-
-      var normal = plane.GetProperty("normal");
-      Vector3 newPlaneNormal = new Vector3(
-        (float)normal.GetProperty("x").GetDouble(),
-        (float)normal.GetProperty("y").GetDouble(),
-        (float)normal.GetProperty("z").GetDouble()
-        );
-
-      var color = plane.GetProperty("color");
-      Vector3 newPlaneColor = new Vector3(
-        (float)color.GetProperty("r").GetDouble(),
-        (float)color.GetProperty("g").GetDouble(),
-        (float)color.GetProperty("b").GetDouble()
-        );
-
-      Plane newPlane = new Plane(newPlanePos, newPlaneNormal, newPlaneColor, newPlaneMaterial);
-      newPlane.Transform(transformMatrix);
-      solids.AddSolid(newPlane);
-    }
-
-    static Material LoadMaterial(JsonElement parent)
-    {
-      var material = parent.GetProperty("material");
-      Material newMaterial = new Material(
-        (float)material.GetProperty("diffuse coef").GetDouble(),
-        (float)material.GetProperty("reflection coef").GetDouble(),
-        (float)material.GetProperty("ambient coef").GetDouble(),
-        (float)material.GetProperty("reflection size (exponent)").GetDouble(),
-        (float)material.GetProperty("transparency").GetDouble(),
-        (float)material.GetProperty("refraction index").GetDouble()
-        );
-      return newMaterial;
-    }
-
-    static void LoadLight(Lights lights, JsonElement light)
-    {
-      var pos = light.GetProperty("position");
-      Vector3 newLightPos = new Vector3(
-        (float)pos.GetProperty("x").GetDouble(),
-        (float)pos.GetProperty("y").GetDouble(),
-        (float)pos.GetProperty("z").GetDouble()
-        );
-
-      var color = light.GetProperty("color");
-      Vector3 newLightColor = new Vector3(
-        (float)color.GetProperty("r").GetDouble(),
-        (float)color.GetProperty("g").GetDouble(),
-        (float)color.GetProperty("b").GetDouble()
-        );
-
-      float newLightIntensity = (float)light.GetProperty("intensity").GetDouble();
-
-      lights.AddLight(newLightPos, newLightColor, newLightIntensity);
-    }
-
 
 
     static Matrix<float> TranslationMatrix(float x, float y, float z)
     {
       float[,] array = new float[4, 4]
       { {1,0,0,0},
-      {0,1,0,0},
-      {0,0,1,0},
-      {x,y,z,1} };
+        {0,1,0,0},
+        {0,0,1,0},
+        {x,y,z,1} };
       return Matrix<float>.Build.DenseOfArray(array);
     }
     static Matrix<float> RotationXMatrix(float angle)
@@ -326,20 +217,17 @@ namespace rt004
       return Matrix<float>.Build.DenseOfArray(array);
     }
 
-    static Matrix<float> GetTransformMat(JsonElement transform)
+    static Matrix<float> GetTransformMatNew(TransformInfo? transformInfo)
     {
-      float translX = (float)transform.GetProperty("translate x").GetDouble();
-      float translY = (float)transform.GetProperty("translate y").GetDouble();
-      float translZ = (float)transform.GetProperty("translate z").GetDouble();
-      float rotX = (float)transform.GetProperty("rotate x").GetDouble();
-      float rotY = (float)transform.GetProperty("rotate y").GetDouble();
-      float rotZ = (float)transform.GetProperty("rotate z").GetDouble();
-
       Matrix<float> resultMatrix = Matrix<float>.Build.DenseIdentity(4, 4);
-      resultMatrix *= TranslationMatrix(translX, translY, translZ);
-      resultMatrix *= RotationXMatrix(rotX);
-      resultMatrix *= RotationYMatrix(rotY);
-      resultMatrix *= RotationZMatrix(rotZ);
+      if (transformInfo is null) return resultMatrix;
+
+      TransformInfo nonNullInfo = (TransformInfo)transformInfo;
+
+      resultMatrix *= TranslationMatrix(nonNullInfo.TranslateX, nonNullInfo.TranslateY, nonNullInfo.TranslateZ);
+      resultMatrix *= RotationXMatrix(nonNullInfo.RotateX);
+      resultMatrix *= RotationYMatrix(nonNullInfo.RotateY);
+      resultMatrix *= RotationZMatrix(nonNullInfo.RotateZ);
 
       return resultMatrix;
     }

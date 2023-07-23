@@ -1,11 +1,11 @@
 {
-  "image parameters": {
+  "imageParameters": {
     "width": 1920,
-    "height": 1080,
-    "rt recursion depth": 10,
+    "height": 100,
+    "rtRecursionDepth": 10,
     "spp": 10,
     "aa": true,
-    "background color": {
+    "backgroundColor": {
       "r": 0.0,
       "g": 0.0,
       "b": 0.0
@@ -17,12 +17,12 @@
       "y": 0.2,
       "z": -0.1
     },
-    "view vector": {
+    "viewVector": {
       "x": 0,
       "y": 0,
       "z": 1
     },
-    "up vector": {
+    "upVector": {
       "x": 0,
       "y": 1,
       "z": 0
@@ -30,175 +30,164 @@
   },
   "shapes": [
     {
-      "root node": {
-        "is leaf": true,
-        "sphere": {
-          "position": {
-            "x": 0.1,
-            "y": 0.4,
-            "z": 1.8
-          },
-          "radius": 0.1,
-          "color": {
-            "r": 0.5,
-            "g": 0.5,
-            "b": 0
-          }
-        }
-      },
-      "material": {
-        "diffuse coef": 0.9,
-        "reflection coef": 0.05,
-        "ambient coef": 0.05,
-        "reflection size (exponent)": 155,
-        "transparency": 0,
-        "refraction index": 1
-      }
-    },
-    {
-      "root node": {
-        "is leaf": true,
-        "plane": {
-          "position": {
-            "x": 0.0,
-            "y": 0.0,
-            "z": 1.0
-          },
-          "normal": {
-            "x": 0,
-            "y": 1,
-            "z": -0.2
-          },
-          "color": {
-            "r": 0,
-            "g": 0.3,
-            "b": 1
-          },
-          "material": {
-            "diffuse coef": 0.9,
-            "reflection coef": 0.05,
-            "ambient coef": 0.05,
-            "reflection size (exponent)": 155,
-            "transparency": 0,
-            "refraction index": 1
-          }
-        }
-      },
-      "material": {
-        "diffuse coef": 0.4,
-        "reflection coef": 0.55,
-        "ambient coef": 0.05,
-        "reflection size (exponent)": 155,
-        "transparency": 0,
-        "refraction index": 1
-      }
-    },
-    {
-      "root node": {
-        "is leaf": false,
-        "transform": {
-          "translate x": 0.2,
-          "translate y": 0,
-          "translate z": 0,
-          "rotate x": 0,
-          "rotate y": 15,
-          "rotate z": 0
+      "sphere": {
+        "position": {
+          "x": 0.1,
+          "y": 0.4,
+          "z": 1.8
         },
-        "child nodes": [
-          {
-            "is leaf": true,
-            "sphere": {
-              "position": {
-                "x": 0.4,
-                "y": 0.15,
-                "z": 1.0
-              },
-              "radius": 0.1,
-              "color": {
-                "r": 1,
-                "g": 0,
-                "b": 0
-              }
-            }
-          },
-          {
-            "is leaf": true,
-            "sphere": {
-              "position": {
-                "x": -0.2,
-                "y": 1.25,
-                "z": 2.5
-              },
-              "radius": 1,
-              "color": {
-                "r": 0,
-                "g": 0,
-                "b": 0
-              },
-              "material": {
-                "diffuse coef": 0.0,
-                "reflection coef": 1,
-                "ambient coef": 0.0,
-                "reflection size (exponent)": 155,
-                "transparency": 0,
-                "refraction index": 1
-              }
-            }
-          },
-          {
-            "is leaf": false,
-            "transform": {
-              "translate x": 0.1,
-              "translate y": -0.1,
-              "translate z": 0,
-              "rotate x": 15,
-              "rotate y": 0,
-              "rotate z": 0
+        "radius": 0.1,
+        "color": {
+          "r": 0.5,
+          "g": 0.5,
+          "b": 0
+        }
+      },
+
+      "material": {
+        "diffuse": 0.9,
+        "reflection": 0.05,
+        "ambient": 0.05,
+        "reflectionSize": 155,
+        "transparency": 0,
+        "refractionIndex": 1
+
+      }
+    },
+    {
+      "plane": {
+        "position": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 1.0
+        },
+        "normal": {
+          "x": 0,
+          "y": 1,
+          "z": -0.2
+        },
+        "color": {
+          "r": 0,
+          "g": 0.3,
+          "b": 1
+        },
+        "material": {
+          "diffuse": 0.9,
+          "reflection": 0.05,
+          "ambient": 0.05,
+          "reflectionSize": 155,
+          "transparency": 0,
+          "refractionIndex": 1
+        }
+      },
+      "material": {
+        "diffuse": 0.4,
+        "reflection": 0.55,
+        "ambient": 0.05,
+        "reflectionSize": 155,
+        "transparency": 0,
+        "refractionIndex": 1
+      }
+    },
+    {
+      "transform": {
+        "translateX": 0.2,
+        "translateY": 0,
+        "translateZ": 0,
+        "rotateX": 0,
+        "rotateY": 15,
+        "rotateZ": 0
+      },
+      "childNodes": [
+        {
+          "sphere": {
+            "position": {
+              "x": 0.4,
+              "y": 0.15,
+              "z": 1.0
             },
-            "child nodes": [
-              {
-                "is leaf": true,
-                "sphere": {
-                  "position": {
-                    "x": 0.1,
-                    "y": 0.2,
-                    "z": 0.7
-                  },
-                  "radius": 0.1,
-                  "color": {
-                    "r": 0,
-                    "g": 0,
-                    "b": 0
-                  },
-                  "material": {
-                    "diffuse coef": 0.75,
-                    "reflection coef": 0.2,
-                    "ambient coef": 0.05,
-                    "reflection size (exponent)": 155,
-                    "transparency": 0.9,
-                    "refraction index": 1.2
-                  }
+            "radius": 0.1,
+            "color": {
+              "r": 1,
+              "g": 0,
+              "b": 0
+            }
+          }
+        },
+        {
+          "sphere": {
+            "position": {
+              "x": -0.2,
+              "y": 1.25,
+              "z": 2.5
+            },
+            "radius": 1,
+            "color": {
+              "r": 0,
+              "g": 0,
+              "b": 0
+            },
+            "material": {
+              "diffuse": 0.0,
+              "reflection": 1,
+              "ambient": 0.0,
+              "reflectionSize": 155,
+              "transparency": 0,
+              "refractionIndex": 1
+            }
+          }
+        },
+        {
+          "transform": {
+            "translateX": 0.1,
+            "translateY": -0.1,
+            "translateZ": 0,
+            "rotateX": 15,
+            "rotateY": 0,
+            "rotateZ": 0
+          },
+          "childNodes": [
+            {
+              "sphere": {
+                "position": {
+                  "x": 0.1,
+                  "y": 0.2,
+                  "z": 0.7
+                },
+                "radius": 0.1,
+                "color": {
+                  "r": 0,
+                  "g": 0,
+                  "b": 0
+                },
+                "material": {
+                  "diffuse": 0.75,
+                  "reflection": 0.2,
+                  "ambient": 0.05,
+                  "reflectionSize": 155,
+                  "transparency": 0.9,
+                  "refractionIndex": 1.2
                 }
               }
-            ]
-          }
-        ]
-      },
+            }
+          ]
+        }
+      ],
       "material": {
-        "diffuse coef": 0.45,
-        "reflection coef": 0.5,
-        "ambient coef": 0.05,
-        "reflection size (exponent)": 155,
+        "diffuse": 0.45,
+        "reflection": 0.5,
+        "ambient": 0.05,
+        "reflectionSize": 155,
         "transparency": 0,
-        "refraction index": 1
+        "refractionIndex": 1
       }
     }
   ],
   "lights": {
-    "ambient light": {
+    "ambientLight": {
       "intensity": 0.5
     },
-    "light sources": [
+    "lightSources": [
       {
         "position": {
           "x": -0.5,

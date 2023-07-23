@@ -1,13 +1,4 @@
-﻿//using System.Numerics;
-#nullable enable
-
-using Microsoft.VisualBasic;
-using System;
-using System.Drawing;
-using System.Dynamic;
-using System.Numerics;
-using System.Runtime.InteropServices;
-using System.Security.Cryptography;
+﻿#nullable enable
 
 namespace rt004
 {
@@ -18,29 +9,20 @@ namespace rt004
   //diffuse+reflection+ambient = 1
   //reflectionSize = 5..500
   //transparency = 0 ... 1
-  struct Material
+  class Material
   {
-    public float diffuse;
-    public float reflection;
-    public float ambient;
-    public float reflectionSize;
-    public float transparency;
-    public float refractionIndex;
+    public float diffuse { get; set; }
+    public float reflection { get; set; }
+    public float ambient { get; set; }
+    public float reflectionSize { get; set; }
+    public float transparency { get; set; }
+    public float refractionIndex { get; set; }
     const float diffuseBase = 0.4f;
     const float reflectionBase = 0.55f;
     const float ambientBase = 0.05f;
     const float reflSizeBase = 155f;
     const float transpBase = 0;
     const float refractionIndexBase = 1;
-    public Material()
-    {
-      diffuse = diffuseBase;
-      reflection = reflectionBase;
-      ambient = ambientBase;
-      reflectionSize = reflSizeBase;
-      transparency = transpBase;
-      refractionIndex = refractionIndexBase;
-    }
     public Material(float diffuse = diffuseBase, float reflection = reflectionBase, float ambient = ambientBase, float reflectionSize = reflSizeBase, float transparency = transpBase, float refractionIndex = refractionIndexBase)
     {
       this.diffuse = diffuse;
