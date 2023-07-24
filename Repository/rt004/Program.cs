@@ -3,10 +3,13 @@
 
 using System.Diagnostics;
 using System.Threading.Tasks;
+using static System.Formats.Asn1.AsnWriter;
 
 namespace rt004
 {
-
+  /// <summary>
+  /// Contains all information about scene - base for drawing
+  /// </summary>
    class Scene
   {
     public AllSolids solids = new AllSolids();
@@ -28,7 +31,16 @@ namespace rt004
   }
   internal class Program
   {
-    static Vector3 RayTrace(Ray ray0, int currentRecursion, Scene scene)
+    /// <summary>
+    /// Traces given ray through scene and computes its final color
+    /// </summary>
+    /// <remarks>Thread safe</remarks>
+
+    /// <param name="ray0">Ray to be traced further</param>
+    /// <param name="remainingRecursions">How many times should ray reflect and refract recursively</param>
+    /// <param name="scene">Information about the whole scene world</param>
+    /// <returns>Color which the given ray should display in its starting point</returns>
+    static Color RayTrace(Ray ray0, int remainingRecursions, Scene scene)
     {
       Ray currentRay = ray0;
       double? t;
@@ -43,7 +55,7 @@ namespace rt004
       //Parallel version is about 6x slower then sequential - too much pressure in ThreadPool? Wrong parallelism implementation?
       //Task[] recursionTasks = new Task[2];
 
-      if (currentRecursion > 0)
+      if (remainingRecursions > 0)
       {
         //reflection
         //var reflTask = Task.Run(() =>
@@ -52,12 +64,14 @@ namespace rt004
 
           Ray newReflectedRay = new Ray(currentIntersection, reflectVec);
 
-          Vector3 rayTracedColor = RayTrace(newReflectedRay, currentRecursion - 1, scene);
+          Vector3 rayTracedColor = RayTrace(newReflectedRay, remainingRecursions - 1, scene);
 
-          outColor += (float)Math.Pow(currentSolid.Material.reflection, scene.imageParameters.RtRecursionDepth - currentRecursion + 1) * rayTracedColor; //+= doesn't expose shared memory
+          outColor += (float)Math.Pow(currentSolid.Material.Reflection, scene.imageParameters.RtRecursionDepth - remainingRecursions + 1) * rayTracedColor; //+= doesn't expose shared memory
         //});
 
         //recursionTasks[0] = reflTask;
+
+
 
         //refraction
 
@@ -69,20 +83,20 @@ namespace rt004
           Solid? originSolid = scene.solids.GetSolidOfAPoint(currentRay.position);
           double originRefrIndex = 1;
           if (originSolid is not null)
-            originRefrIndex = originSolid.Material.refractionIndex;
+            originRefrIndex = originSolid.Material.RefractionIndex;
           Solid? outsideSolid = scene.solids.GetSolidOfAPoint(furtherIntersection);
           double outsideRefrIndex = 1;
-          if (outsideSolid is not null) { outsideRefrIndex = outsideSolid.Material.refractionIndex; }
+          if (outsideSolid is not null) { outsideRefrIndex = outsideSolid.Material.RefractionIndex; }
 
           Vector3? refractVec = VectorCalculator.GetRefractedVector(originRefrIndex, outsideRefrIndex, currentSolid.GetNormal(currentIntersection, currentRay.position), currentRay.vector);
-          if (refractVec is not null && currentSolid.Material.transparency > 0)
+          if (refractVec is not null && currentSolid.Material.Transparency > 0)
           {
 
             Ray newRefractedRay = new Ray(furtherIntersection, (Vector3)refractVec);
 
-            Vector3 refractedColor = RayTrace(newRefractedRay, currentRecursion - 1, scene);
+            Vector3 refractedColor = RayTrace(newRefractedRay, remainingRecursions - 1, scene);
 
-            outColor += (float)Math.Pow(currentSolid.Material.transparency, scene.imageParameters.RtRecursionDepth - currentRecursion + 1) * refractedColor; //+= doesn't expose shared memory
+            outColor += (float)Math.Pow(currentSolid.Material.Transparency, scene.imageParameters.RtRecursionDepth - remainingRecursions + 1) * refractedColor; //+= doesn't expose shared memory
 
           }
         //});
@@ -94,32 +108,43 @@ namespace rt004
     }
 
 
-
-    static Vector3 AntiAliasAsync(float x, float y, Random random, Scene scene)
-    {
-      int spp = scene.imageParameters.Spp;
-      int segmentsInRow = (int)Math.Sqrt(spp);
-      double pixelSizeX = 2d / (double)scene.imageParameters.Width;
-      double pixelSizeY = 2d / (double)scene.imageParameters.Height;
-      double segmentSizeX = pixelSizeX / segmentsInRow;
-      double segmentSizeY = pixelSizeY / segmentsInRow;
-
+    /// <returns>List of created segments</returns>
+    static List<PixelSegment> SplitPixelIntoSegments(float x, float y, ScenePixelsAndSegmentsInfo pixelsInfo)
+    { 
+      //Split the pixel into segments
       List<PixelSegment> segments = new List<PixelSegment>();
-      for (double i = (double)-segmentsInRow / 2; i < (double)segmentsInRow / 2; i++)
+      for (double i = (double)-pixelsInfo.segmentsInRow / 2; i < (double)pixelsInfo.segmentsInRow / 2; i++)
       {
-        for (double j = (double)-segmentsInRow / 2; j < (double)segmentsInRow / 2; j++)
+        for (double j = (double)-pixelsInfo.segmentsInRow / 2; j < (double)pixelsInfo.segmentsInRow / 2; j++)
         {
           segments.Add(new PixelSegment
           {
-            left = new Vector2d { x = x + i * segmentSizeX, y = y + j * segmentSizeY + segmentSizeY / 2 },
-            right = new Vector2d { x = x + i * segmentSizeX - segmentSizeX, y = y + j * segmentSizeY + segmentSizeY / 2 },
-            top = new Vector2d { x = x + i * segmentSizeX + segmentSizeX / 2, y = y + j * segmentSizeY },
-            bottom = new Vector2d { x = x + i * segmentSizeX + segmentSizeX / 2, y = y + j * segmentSizeY - segmentSizeY }
+            left = new Vector2d { x = x + i * pixelsInfo.segmentSizeX, y = y + j * pixelsInfo.segmentSizeY + pixelsInfo.segmentSizeY / 2 },
+            right = new Vector2d { x = x + i * pixelsInfo.segmentSizeX - pixelsInfo.segmentSizeX, y = y + j * pixelsInfo.segmentSizeY + pixelsInfo.segmentSizeY / 2 },
+            top = new Vector2d { x = x + i * pixelsInfo.segmentSizeX + pixelsInfo.segmentSizeX / 2, y = y + j * pixelsInfo.segmentSizeY },
+            bottom = new Vector2d { x = x + i * pixelsInfo.segmentSizeX + pixelsInfo.segmentSizeX / 2, y = y + j * pixelsInfo.segmentSizeY - pixelsInfo.segmentSizeY }
           });
         }
       }
+      return segments;
+    }
 
-      Vector3 outColor = Vector3.Zero;
+    /// <summary>
+    /// Creates multiple rays around given pixel and raytraces them.
+    /// </summary>
+    /// <param name="x">Given pixel X position</param>
+    /// <param name="y">Given pixel X position</param>
+    /// <param name="random">Random generator</param>
+    /// <param name="scene">Scene representing the whole world</param>
+    /// <returns>A mean of all colors calculated around the pixel</returns>
+    static Vector3 AntiAlias(float x, float y, Random random, Scene scene)
+    {
+      ScenePixelsAndSegmentsInfo pixelsInfo = new ScenePixelsAndSegmentsInfo(scene.imageParameters.Spp, scene.imageParameters.Width, scene.imageParameters.Height);
+      List<PixelSegment> segments = SplitPixelIntoSegments(x, y, pixelsInfo);
+
+      Color outColor = Vector3.Zero;
+
+      //Take random point in each segment and raytrace it.
 
       //Parallel version about 4x slower than sequential - too much pressure on ThreadPool? Or wrong parallelism implementation?
 
@@ -129,8 +154,8 @@ namespace rt004
       {
         //tasks.Add(Task.Run(() =>
         //{
-          float newX = (float)(segment.left.x - random.NextDouble() * segmentSizeX);
-          float newY = (float)(segment.bottom.y + random.NextDouble() * segmentSizeY);
+          float newX = (float)(segment.left.x - random.NextDouble() * pixelsInfo.segmentSizeX);
+          float newY = (float)(segment.bottom.y + random.NextDouble() * pixelsInfo.segmentSizeY);
 
           Ray ray = scene.camera.CreateRay(newX, newY);
           outColor += RayTrace(ray, scene.imageParameters.RtRecursionDepth, scene);
@@ -139,10 +164,17 @@ namespace rt004
 
       //Task.WaitAll(tasks.ToArray());
 
-      return outColor / (float)Math.Pow(segmentsInRow, 2);
+      return outColor / (float)Math.Pow(pixelsInfo.segmentsInRow, 2);
 
     }
 
+
+
+    /// <summary>
+    /// Takes each pixel and traces a ray through it - result color is assigned to the pixel
+    /// </summary>
+    /// <param name="fi">Empty image to be overdrawn</param>
+    /// <param name="scene">Scene to be drawn in image</param>
     static void CreateHDRImage(FloatImage fi, Scene scene)
     {
       ImageParameters imPar = scene.imageParameters;
@@ -163,7 +195,7 @@ namespace rt004
 
           if (imPar.Aa)
           {
-            Vector3 AAColor = AntiAliasAsync(normalizedX, normalizedY, random, scene);
+            Vector3 AAColor = AntiAlias(normalizedX, normalizedY, random, scene);
             color = new float[3] { AAColor.X, AAColor.Y, AAColor.Z };
           }
           else
@@ -187,14 +219,14 @@ namespace rt004
       Stopwatch stopwatch = new Stopwatch();
       stopwatch.Start();
 
-      // Parameters.
+      // Init parameters
       Scene scene = new()
       {
         imageParameters = new ImageParameters { Width = 600, Height = 450, RtRecursionDepth = 10, BackgroundColor = Vector3.One }
       };
 
 
-
+      //Get config input and load
       StreamReader configStream;
       try
       {
@@ -209,11 +241,15 @@ namespace rt004
 
       ConfigInputHandler.LoadConfig(configStream, scene);
 
+
+      //Create image, where colored pixels will be saved
       FloatImage fi = new FloatImage(scene.imageParameters.Width, scene.imageParameters.Height, 3);
 
 
+      //Draw scene
       CreateHDRImage(fi, scene);
 
+      //Save imageto file
 
       //fi.SaveHDR(fileName);   // Doesn't work well yet...
       fi.SavePFM(Constants.outFileName);

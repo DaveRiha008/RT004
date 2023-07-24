@@ -1,8 +1,13 @@
-﻿using System.Numerics;
+﻿using MathNet.Numerics.LinearAlgebra;
+using System.Numerics;
 using System.Text.Json.Serialization;
 
 namespace rt004
 {
+  /// <summary>
+  /// Simpler version of Vector3 describing only position in a 3D world
+  /// </summary>
+  /// <remarks>Implicitly convertible on Vector3</remarks>
   struct Position3D
   {
     public float x { get; set; }
@@ -35,6 +40,10 @@ namespace rt004
 
   }
 
+  /// <summary>
+  /// Simpler version of Vector3 describing only RGB Color
+  /// </summary>
+  /// <remarks>Implicitly convertible on Vector3</remarks>
   class Color
   {
 
@@ -73,7 +82,9 @@ namespace rt004
   }
 
 
-  //TODO: Warnings in code, that some property names are dependent on json
+  /// <summary>
+  /// Holds all information about final image
+  /// </summary>
   struct ImageParameters
   {
     //Warning: All property names dependent on json config
@@ -94,7 +105,9 @@ namespace rt004
     }
   }
 
-
+  /// <summary>
+  /// Support type in Shape hierarchy - holds all information about one node
+  /// </summary>
   class ShapeNode
   {
     //Warning: All property names dependent on json config
@@ -108,6 +121,9 @@ namespace rt004
     public ShapeNode[] ChildNodes { get; set; } = new ShapeNode[0];
   }
 
+  /// <summary>
+  /// Holds all information about any solid transformation
+  /// </summary>
   struct TransformInfo
   {
     //Warning: All property names dependent on json config
@@ -118,9 +134,90 @@ namespace rt004
     public float RotateX { get; set; }
     public float RotateY { get; set; }
     public float RotateZ { get; set; }
+
+
+
+    /// <returns>Translation matrix which when applied to shape translates it by desired values</returns>
+    public static Matrix<float> TranslationMatrix(float x, float y, float z)
+    {
+      float[,] array = new float[4, 4]
+      { {1,0,0,0},
+        {0,1,0,0},
+        {0,0,1,0},
+        {x,y,z,1} };
+      return Matrix<float>.Build.DenseOfArray(array);
+    }
+
+    /// <param name="angle">Angle in degrees</param>
+    /// <returns>Rotation matrix which when applied to shape rotates it by desired angle around X axis</returns>
+    public static Matrix<float> RotationXMatrix(float angle)
+    {
+      double angleRad = angle * (Math.PI / 180);
+
+      float cos = (float)Math.Cos(angleRad);
+      float sin = (float)Math.Sin(angleRad);
+      float[,] array = new float[4, 4]
+      { {1,0,0,0},
+        {0,cos,-sin,0},
+        {0,sin,cos,0},
+        {0,0,0,1} };
+      return Matrix<float>.Build.DenseOfArray(array);
+    }
+
+
+    /// <param name="angle">Angle in degrees</param>
+    /// <returns>Rotation matrix which when applied to shape rotates it by desired angle around Y axis</returns>
+    public static Matrix<float> RotationYMatrix(float angle)
+    {
+      double angleRad = angle * (Math.PI / 180);
+
+      float cos = (float)Math.Cos(angleRad);
+      float sin = (float)Math.Sin(angleRad);
+      float[,] array = new float[4, 4]
+      { {cos,0,sin,0},
+        {0,1,0,0},
+        {-sin,0,cos,0},
+        {0,0,0,1} };
+      return Matrix<float>.Build.DenseOfArray(array);
+    }
+
+    /// <param name="angle">Angle in degrees</param>
+    /// <returns>Rotation matrix which when applied to shape rotates it by desired angle around Z axis</returns>
+    public static Matrix<float> RotationZMatrix(float angle)
+    {
+      double angleRad = angle * (Math.PI / 180);
+
+      float cos = (float)Math.Cos(angleRad);
+      float sin = (float)Math.Sin(angleRad);
+      float[,] array = new float[4, 4]
+      { {cos,-sin,0,0},
+        {sin,cos,0,0},
+        {0,0,1,0},
+        {0,0,0,1} };
+      return Matrix<float>.Build.DenseOfArray(array);
+    }
+
+    /// <summary>Makes a matrix out of this transform info</summary>
+    /// <returns>Transformation matrix modifying shapes when multiplying their position</returns>
+    public Matrix<float> GetTransformMatNew()
+    {
+      Matrix<float> resultMatrix = Matrix<float>.Build.DenseIdentity(4, 4);
+
+
+      resultMatrix *= TranslationMatrix(TranslateX, TranslateY, TranslateZ);
+      resultMatrix *= RotationXMatrix(RotateX);
+      resultMatrix *= RotationYMatrix(RotateY);
+      resultMatrix *= RotationZMatrix(RotateZ);
+
+      return resultMatrix;
+    }
+
   }
 
-
+  /// <summary>
+  /// Holds all information about scene lighting
+  /// <para>Unlike AllLights - compatible with JSON deserialization, but not with scene</para>
+  /// </summary>
   struct LightsInfo
   {
     //Warning: All property names dependent on json config
@@ -141,12 +238,38 @@ namespace rt004
 
 
 
-
+  /// <summary>
+  /// Double version of 2D vector
+  /// </summary>
   struct Vector2d
   {
     public double x { get; set; }
     public double y { get; set; }
   }
+
+  /// <summary>
+  /// Contains info about pixel and pixel segment sizes based on given spp and screen size
+  /// </summary>
+  struct ScenePixelsAndSegmentsInfo
+  {
+    public int segmentsInRow;
+    public double pixelSizeX;
+    public double pixelSizeY;
+    public double segmentSizeX;
+    public double segmentSizeY;
+    public ScenePixelsAndSegmentsInfo(int spp, float sceneWidth, float sceneHeight)
+    {
+      segmentsInRow = (int)Math.Sqrt(spp);
+      pixelSizeX = 2d / (double)sceneWidth;
+      pixelSizeY = 2d / (double)sceneHeight;
+      segmentSizeX = pixelSizeX / segmentsInRow;
+      segmentSizeY = pixelSizeY / segmentsInRow;
+    }
+  }
+
+  /// <summary>
+  /// Holds information about one pixel segment - positions of its 4 borders
+  /// </summary>
   struct PixelSegment
   {
     public Vector2d left { get; set; }

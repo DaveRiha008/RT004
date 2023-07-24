@@ -1,11 +1,14 @@
 ﻿#nullable enable
 
 using System.Text.Json;
+using MathNet.Numerics.Distributions;
 using MathNet.Numerics.LinearAlgebra;
 
 namespace rt004
 {
-
+  /// <summary>
+  /// Data holder for JSON deserializer - holds all information required for scene creation
+  /// </summary>
   class ConfigData
   {
     //Warning: All property names dependent on json config
@@ -19,10 +22,19 @@ namespace rt004
 
   }
 
-
-  class ConfigInputHandler
+  /// <summary>
+  /// Handles all json config deserialization process
+  /// </summary>
+  static class ConfigInputHandler
   {
 
+    /// <summary>
+    /// Main method - loads desired config from stream and saves them in scene
+    /// </summary>
+    /// <param name="configStream">Input config stream - json format</param>
+    /// <param name="scene">Scene in which all the information is saved</param>
+    /// <exception cref="JsonException">Thrown when failed to deserialize json document</exception>
+    /// <exception cref="PropertyNotDescribedException">Thrown when some crucial information is missing in the config file</exception>
     public static void LoadConfig(StreamReader configStream, Scene scene)
     {
       string configText = configStream.ReadToEnd();
@@ -34,37 +46,50 @@ namespace rt004
 
 
       if (data.ImageParameters is null) Console.WriteLine("Warning: No image parameters found - using default values");
-      LoadImageParNew(data.ImageParameters, scene);
+      LoadImagePar(data.ImageParameters, scene);
 
 
-      if (data.Camera is not null) LoadCameraNew(data.Camera, scene);
+      if (data.Camera is not null) LoadCamera(data.Camera, scene);
       else throw new PropertyNotDescribedException("Camera data not found");
 
       if (data.Shapes.Length <= 0) Console.WriteLine("Warning: No shapes found - intended?");
       ShapeHierarchy.LoadShapes(data.Shapes, scene);
 
       if (data.Lights is null) Console.WriteLine("Warning: No lights information found - intended?");
-      LoadLightNew(data.Lights, scene);
+      LoadLight(data.Lights, scene);
     }
   
 
-
-    static void LoadImageParNew(ImageParameters? imageParameters, Scene scene)
+    /// <summary>
+    /// Simply passes image parameters to scene
+    /// </summary>
+    static void LoadImagePar(ImageParameters? imageParameters, Scene scene)
     {
       if (imageParameters is null) scene.imageParameters = new ImageParameters();
       else scene.imageParameters = (ImageParameters)imageParameters;
     }
 
-
-    static void LoadCameraNew(Camera camera, Scene scene)
+    /// <summary>
+    /// Simply passes camera to scene and edits crucial camera parameters based on Image parameters
+    /// </summary>
+    static void LoadCamera(Camera camera, Scene scene)
     {
       scene.camera = camera;
       scene.camera.AspectRatio = (float)scene.imageParameters.Width / (float)scene.imageParameters.Height;
     }
 
-
+    /// <summary>
+    /// Handles all tranformations and material passing in shape hierarchy
+    /// </summary>
     class ShapeHierarchy
     {
+      /// <summary>
+      /// Main method -
+      /// Loads all given shapes -
+      /// Each shape represents one hierarchy tree
+      /// </summary>
+      /// <param name="shapes">Trees to be loaded</param>
+      /// <param name="scene">Scene to which they are loaded</param>
       public static void LoadShapes(ShapeNode[] shapes, Scene scene)
       {
         foreach (ShapeNode shape in shapes)
@@ -73,39 +98,58 @@ namespace rt004
         }
       }
 
+      /// <summary>
+      /// Loads one shape tree
+      /// </summary>
       static void LoadShape(ShapeNode rootNode, Scene scene)
       {
         Matrix<float> transMatrix = Matrix<float>.Build.DenseIdentity(4, 4);
-        transMatrix *= GetTransformMatNew(rootNode.Transform);
+        if (rootNode.Transform is not null) transMatrix *= ((TransformInfo)rootNode.Transform).GetTransformMatNew(); 
         if (rootNode.Sphere is not null)
-          LoadSphereNew(rootNode, transMatrix, scene);
+          LoadSphere(rootNode, transMatrix, scene);
         if (rootNode.Plane is not null)
-          LoadPlaneNew(rootNode, transMatrix, scene);
+          LoadPlane(rootNode, transMatrix, scene);
         foreach (ShapeNode child in rootNode.ChildNodes)
         {
           LoadNodeChild(rootNode, child, transMatrix, scene);
         }
       }
 
+      /// <summary>
+      /// Loads one child node - can inherit material, color, transform matrix
+      /// </summary>
+      /// <param name="parent">Parent node</param>
+      /// <param name="child">Node to be loaded</param>
+      /// <param name="tMat">Tranformation matrix from parent</param>
+      /// <param name="scene">Scene to which all is loaded</param>
       static void LoadNodeChild(ShapeNode parent, ShapeNode child, Matrix<float> tMat, Scene scene)
       {
-        Matrix<float> transMatrix = tMat * GetTransformMatNew(child.Transform);
+
+        Matrix<float> transMatrix = tMat;
+        if(child.Transform is not null) transMatrix *= ((TransformInfo)child.Transform).GetTransformMatNew();
         if (child.Material is null)
           child.Material = parent.Material;
         if (child.Color is null)
           child.Color = parent.Color;
         if (child.Sphere is not null)
-          LoadSphereNew(child, transMatrix, scene);
+          LoadSphere(child, transMatrix, scene);
         if (child.Plane is not null)
-          LoadPlaneNew(child, transMatrix, scene);
+          LoadPlane(child, transMatrix, scene);
         foreach (ShapeNode child2 in child.ChildNodes)
         {
           LoadNodeChild(child, child2, transMatrix, scene);
         }
       }
 
-
-      static void LoadSphereNew(ShapeNode node, Matrix<float> tMat, Scene scene)
+      /// <summary>
+      /// Loads sphere to scene based on node information
+      /// </summary>
+      /// <param name="node">Node in which Sphere is described</param>
+      /// <param name="tMat">Transform matrix applied to sphere</param>
+      /// <param name="scene">Scene to which sphere is loaded</param>
+      /// <exception cref="NullReferenceException">Thrown when passed node doesn't have any Sphere</exception>
+      /// <exception cref="PropertyNotDescribedException">Thrown when a crucial information about sphere is missing</exception>
+      static void LoadSphere(ShapeNode node, Matrix<float> tMat, Scene scene)
       {
         if (node.Sphere is null) throw new NullReferenceException("Sphere is null in LoadSphere function");
 
@@ -125,8 +169,15 @@ namespace rt004
         scene.solids.AddSolid(node.Sphere);
       }
 
-
-      static void LoadPlaneNew(ShapeNode node, Matrix<float> tMat, Scene scene)
+      /// <summary>
+      /// Loads plane to scene based on node information
+      /// </summary>
+      /// <param name="node">Node in which Plane is described</param>
+      /// <param name="tMat">Transform matrix applied to plane</param>
+      /// <param name="scene">Scene to which plane is loaded</param>
+      /// <exception cref="NullReferenceException">Thrown when passed node doesn't have any Plane</exception>
+      /// <exception cref="PropertyNotDescribedException">Thrown when a crucial information about plane is missing</exception>
+      static void LoadPlane(ShapeNode node, Matrix<float> tMat, Scene scene)
       {
         if (node.Plane is null) throw new NullReferenceException("Plane is null in LoadSphere function");
 
@@ -149,8 +200,11 @@ namespace rt004
 
     }
 
+    /// <summary>
+    /// Loads all lighting to scene
+    /// </summary>
 
-    static void LoadLightNew(LightsInfo? lightsInfo, Scene scene)
+    static void LoadLight(LightsInfo? lightsInfo, Scene scene)
     {
       LightsInfo nonNullInfo;
       if (lightsInfo is null) nonNullInfo = new LightsInfo(); 
@@ -166,71 +220,6 @@ namespace rt004
     }
 
 
-    static Matrix<float> TranslationMatrix(float x, float y, float z)
-    {
-      float[,] array = new float[4, 4]
-      { {1,0,0,0},
-        {0,1,0,0},
-        {0,0,1,0},
-        {x,y,z,1} };
-      return Matrix<float>.Build.DenseOfArray(array);
-    }
-    static Matrix<float> RotationXMatrix(float angle)
-    {
-      double angleRad = angle * (Math.PI / 180);
-
-      float cos = (float)Math.Cos(angleRad);
-      float sin = (float)Math.Sin(angleRad);
-      float[,] array = new float[4, 4]
-      { {1,0,0,0},
-        {0,cos,-sin,0},
-        {0,sin,cos,0},
-        {0,0,0,1} };
-      return Matrix<float>.Build.DenseOfArray(array);
-    }
-
-    static Matrix<float> RotationYMatrix(float angle)
-    {
-      double angleRad = angle * (Math.PI / 180);
-
-      float cos = (float)Math.Cos(angleRad);
-      float sin = (float)Math.Sin(angleRad);
-      float[,] array = new float[4, 4]
-      { {cos,0,sin,0},
-        {0,1,0,0},
-        {-sin,0,cos,0},
-        {0,0,0,1} };
-      return Matrix<float>.Build.DenseOfArray(array);
-    }
-
-    static Matrix<float> RotationZMatrix(float angle)
-    {
-      double angleRad = angle * (Math.PI / 180);
-
-      float cos = (float)Math.Cos(angleRad);
-      float sin = (float)Math.Sin(angleRad);
-      float[,] array = new float[4, 4]
-      { {cos,-sin,0,0},
-        {sin,cos,0,0},
-        {0,0,1,0},
-        {0,0,0,1} };
-      return Matrix<float>.Build.DenseOfArray(array);
-    }
-
-    static Matrix<float> GetTransformMatNew(TransformInfo? transformInfo)
-    {
-      Matrix<float> resultMatrix = Matrix<float>.Build.DenseIdentity(4, 4);
-      if (transformInfo is null) return resultMatrix;
-
-      TransformInfo nonNullInfo = (TransformInfo)transformInfo;
-
-      resultMatrix *= TranslationMatrix(nonNullInfo.TranslateX, nonNullInfo.TranslateY, nonNullInfo.TranslateZ);
-      resultMatrix *= RotationXMatrix(nonNullInfo.RotateX);
-      resultMatrix *= RotationYMatrix(nonNullInfo.RotateY);
-      resultMatrix *= RotationZMatrix(nonNullInfo.RotateZ);
-
-      return resultMatrix;
-    }
 
 
   }

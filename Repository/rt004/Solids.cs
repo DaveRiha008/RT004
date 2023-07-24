@@ -5,10 +5,18 @@ using MathNet.Numerics.LinearAlgebra;
 
 namespace rt004
 {
+  /// <summary>
+  /// Holds all information about solids a scene needs
+  /// </summary>
   class AllSolids
   {
     Dictionary<int, Solid> solids = new();
     int currentIndex = 0;
+
+    /// <summary>
+    /// Adds a solid to local storage
+    /// </summary>
+    /// <returns>Index of the solid for future manipulation</returns>
     public int AddSolid(Solid solid)
     {
       solids.Add(currentIndex, solid);
@@ -16,11 +24,21 @@ namespace rt004
       return currentIndex-1;
     }
 
+    /// <summary>
+    /// Removes a solid from local storage
+    /// </summary>
+    /// <param name="index">Index of removed solid</param>
     public void RemoveSolid(int index)
     {
       solids.Remove(index);
     }
 
+    /// <summary>
+    /// Iterates through all solids and finds the closest intersection with ray
+    /// </summary>
+    /// <param name="ray">Ray which should intersect</param>
+    /// <param name="outT">Output float describing how many times the ray should step in its direction to arrive at closest intersection</param>
+    /// <param name="outSolid">Output solid with which the ray intersects first</param>
     public void GetClosestIntersection(Ray ray, out double? outT, out Solid? outSolid)
     {
       outT = null;
@@ -46,7 +64,11 @@ namespace rt004
       }
     }
 
-    public Solid? GetSolidOfAPoint(Vector3 point)
+    /// <summary>
+    /// Finds a solid which the given point is part of
+    /// </summary>
+    /// <returns>Found solid or Null if the point isn't part of any solid</returns>
+    public Solid? GetSolidOfAPoint(Position3D point)
     {
       Solid? returnSolid = null;
       foreach(Solid solid in solids.Values)
@@ -59,15 +81,37 @@ namespace rt004
       return returnSolid;
     }
   }
+
+  /// <summary>
+  /// Abstract class of any solid appearing in the scene
+  /// Required properties - Color, Material, Position
+  /// </summary>
   abstract class Solid
   {
     //Warning: All property names dependent on json config
 
+    public Position3D Position { get; set; } = Vector3.Zero;
     public Color? Color { get; set; }
-    public Material Material { get; set; } = new Material(); 
+    public Material Material { get; set; } = new Material();
+    /// <summary>
+    /// Calculates whether the given ray intersects with this solid
+    /// </summary>
+    /// <param name="ray">Ray which should intersect</param>
+    /// <param name="outT">Output float describing how many times the ray should step in its direction to arrive at closest intersection</param>
     public abstract void GetIntersection(Ray ray, out double? outT);
-    public abstract bool IsPointInside(Vector3 point);
-    public abstract Vector3 GetNormal(Vector3 intersectionPoint, Vector3 origin);
+    /// <summary>
+    /// Calculates whether the given point is a part of this solid
+    /// </summary>
+    public abstract bool IsPointInside(Position3D point);
+    /// <summary>
+    /// Calculates the normal in intersection point on the surface of this solid based on origin of the ray
+    /// </summary>
+    /// <param name="intersectionPoint">Intersection on surface of this solid</param>
+    /// <param name="origin">Origin of the ray</param>
+    public abstract Vector3 GetNormal(Position3D intersectionPoint, Position3D origin);
+    /// <summary>
+    /// Tranforms the solid with given transformation matrix
+    /// </summary>
     public abstract void Transform(Matrix<float> tranformMatrix);
   }
 
@@ -76,7 +120,6 @@ namespace rt004
   {
     //Warning: All property names dependent on json config
 
-    public Position3D Position { get; set; } = Vector3.Zero;
     public Position3D Normal { get; set; } = Vector3.UnitY;
     
     public Plane(Position3D position, Position3D normal, Color color, Material material)
@@ -90,12 +133,15 @@ namespace rt004
 
 
     //TODO propper equation function (for total internal reflection suffices false)
-    public override bool IsPointInside(Vector3 point)
+    public override bool IsPointInside(Position3D point)
     {
       return false;
     }
 
-    bool ShouldReverseNormal(Vector3 point)
+    /// <summary>
+    /// Decides whether the given point is on the other side of plane and therefore has reversed normal
+    /// </summary>
+    bool ShouldReverseNormal(Position3D point)
     {
       Ray ray = new Ray(point, VectorCalculator.GetVectorBetween2Points((Position + Normal), point));
       double? T;
@@ -104,15 +150,12 @@ namespace rt004
       else return true;
     }
 
-    public Vector3 GetNormal(Vector3 intersectionPoint)
-    {
-      return Normal;
-    }
-    public override Vector3 GetNormal(Vector3 intersectionPoint, Vector3 origin)
+    public override Vector3 GetNormal(Position3D intersectionPoint, Position3D origin)
     {
       if (ShouldReverseNormal(origin)) return Normal;
       return -Normal;
     }
+
 
     public override void GetIntersection(Ray ray, out double? outT)
     {
@@ -153,7 +196,6 @@ namespace rt004
   {
     //Warning: All property names dependent on json config
 
-    public Position3D Position { get; private set; } = Vector3.Zero;
     public float Radius { get; private set; } = 0;
     public Sphere(Position3D position, float radius, Color color, Material material)
     {
@@ -195,18 +237,22 @@ namespace rt004
 
     }
 
-    public override bool IsPointInside(Vector3 point)
+    public override bool IsPointInside(Position3D point)
     {
-      return DistanceCalculator.GetDistance(point, Position) < Radius - Constants.epsilon;
+      return VectorCalculator.GetDistance(point, Position) < Radius - Constants.epsilon;
     }
 
+
+    /// <summary>
+    /// Calculates normal of the sphere on given surface point
+    /// </summary>
     public Vector3 GetNormal(Vector3 intersectionPoint)
     {
       Vector3 normal = new Vector3((intersectionPoint.X-Position.x)/Radius, (intersectionPoint.Y-Position.y)/Radius, (intersectionPoint.Z-Position.z)/Radius);
       normal = Vector3.Normalize(normal);
       return normal;
     }
-    public override Vector3 GetNormal(Vector3 intersectionPoint, Vector3 origin)
+    public override Vector3 GetNormal(Position3D intersectionPoint, Position3D origin)
     {
       Vector3 normal = GetNormal(intersectionPoint);
       if (IsPointInside(origin)) return -normal;
