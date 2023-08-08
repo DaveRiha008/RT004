@@ -19,6 +19,7 @@ namespace rt004
 
     public LightsInfo? Lights { get; set; }
 
+    public AnimationInfo? Animation { get; set; }
 
   }
 
@@ -50,15 +51,26 @@ namespace rt004
 
 
       if (data.Camera is not null) LoadCamera(data.Camera, scene);
-      else throw new PropertyNotDescribedException("Camera data not found");
+      else if (data.Animation is null)throw new PropertyNotDescribedException("Camera data not found");
 
       if (data.Shapes.Length <= 0) Console.WriteLine("Warning: No shapes found - intended?");
       ShapeHierarchy.LoadShapes(data.Shapes, scene);
 
       if (data.Lights is null) Console.WriteLine("Warning: No lights information found - intended?");
       LoadLight(data.Lights, scene);
+
+      if (data.Animation is null) Console.WriteLine("No animation info found - creating only one image");
+      LoadAnimation(scene, data.Animation);
     }
   
+
+    /// <summary>
+    /// Simply passes animation info to scene
+    /// </summary>
+    static void LoadAnimation(Scene scene, AnimationInfo? animationInfo)
+    {
+      scene.animationInfo = animationInfo;
+    }
 
     /// <summary>
     /// Simply passes image parameters to scene

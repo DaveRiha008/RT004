@@ -5,6 +5,27 @@ namespace rt004
   class ImageCreator
   {
     /// <summary>
+    /// Creates an image of given scene and saves it in given pfm file
+    /// </summary>
+    /// <param name="scene">Scene to be drawn in image</param>
+    public static void CreateAndSaveHDRImage(Scene scene, string outputFileName)
+    {
+      //Create image, where colored pixels will be saved
+      FloatImage fi = new FloatImage(scene.imageParameters.Width, scene.imageParameters.Height, 3);
+
+
+      //Draw scene
+      CreateHDRImage(fi, scene);
+
+      //Save imageto file
+
+      //fi.SaveHDR(fileName);   // Doesn't work well yet...
+      fi.SavePFM(outputFileName);
+
+      Console.WriteLine("HDR image is finished.");
+    }
+
+    /// <summary>
     /// Takes each pixel and traces a ray through it - result color is assigned to the pixel
     /// </summary>
     /// <param name="fi">Empty image to be overdrawn</param>

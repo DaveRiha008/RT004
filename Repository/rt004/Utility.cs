@@ -1,4 +1,6 @@
-﻿using MathNet.Numerics.LinearAlgebra;
+﻿using MathNet.Numerics.Distributions;
+using MathNet.Numerics.LinearAlgebra;
+using System.Diagnostics.Metrics;
 using System.Numerics;
 using System.Text.Json.Serialization;
 
@@ -143,6 +145,26 @@ namespace rt004
 
   }
 
+  /// <summary>
+  /// Holds all information required to create an animation
+  /// </summary>
+  struct AnimationInfo
+  {    
+    //Warning: All property names dependent on json config
+    /// <summary>
+    /// Frames per second of the animation
+    /// </summary>
+    public int Fps { get; set; }
+    /// <summary>
+    /// How long will the animation be (in seconds)
+    /// </summary>
+    public float AnimationLength { get; set; }
+    /// <summary>
+    /// Name of the file containing correctly formatted camera script (positions in time)
+    /// </summary>
+    public string CameraScript { get; set; }
+  }
+
 
 
   /// <summary>
@@ -184,5 +206,48 @@ namespace rt004
     public Vector2d top { get; set; }
     public Vector2d bottom { get; set; }
   }
+
+
+
+  //Copied from other project - 086shader 
+  class Util
+  {
+    /// <summary>
+    /// Converts a comma-separated list into a dictionary of [key,value] tuples.
+    /// </summary>
+    /// <param name="str">String to parse.</param>
+    /// <param name="separator">Optional specification of the separator character.</param>
+    public static Dictionary<string, string> ParseKeyValueList(string str, char separator = ',')
+    {
+      int len = str.Length;
+      int start = 0;
+      Dictionary<string, string> result = new Dictionary<string, string>();
+
+      while (start < len)
+      {
+        int end = str.IndexOf(separator, start);
+        if (end == start)
+        {
+          start++;
+          continue;
+        }
+
+        if (end < 0) end = len;
+        int eq = str.IndexOf('=', start);
+        if (eq != start)
+        {
+          if (eq < 0 || eq > end) // only key (tag) is present, assume empty value..
+            eq = end;
+          string value = (eq < end - 1) ? str.Substring(eq + 1, end - eq - 1) : "";
+          string key = str.Substring(start, eq - start);
+          result[key.Trim()] = value.Trim();
+        }
+
+        start = end + 1;
+      }
+      return result;
+    }
+  }
+
 }
 

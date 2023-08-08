@@ -49,20 +49,9 @@ namespace rt004
         Console.WriteLine(ex.Message + " - ending program"); return;
       }
 
+      if (scene.camera is not null) ImageCreator.CreateAndSaveHDRImage(scene, Constants.outFileName);
 
-      //Create image, where colored pixels will be saved
-      FloatImage fi = new FloatImage(scene.imageParameters.Width, scene.imageParameters.Height, 3);
-
-
-      //Draw scene
-      ImageCreator.CreateHDRImage(fi, scene);
-
-      //Save imageto file
-
-      //fi.SaveHDR(fileName);   // Doesn't work well yet...
-      fi.SavePFM(Constants.outFileName);
-
-      Console.WriteLine("HDR image is finished.");
+      if (scene.animationInfo is not null) AnimatedCamera.MakeAnimation(scene.animationInfo.Value, scene);
 
       stopwatch.Stop();
       string elapsedTime = stopwatch.Elapsed.ToString();

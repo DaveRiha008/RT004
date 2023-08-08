@@ -1,9 +1,14 @@
 {
+  "animation": {
+    "fps": 30,
+    "animationLength": 10,
+    "cameraScript": "CameraScript.txt"
+  },
   "imageParameters": {
-    "width": 960,
-    "height": 540,
-    "rtRecursionDepth": 10,
-    "spp": 10,
+    "width": 1280,
+    "height": 720,
+    "rtRecursionDepth": 6,
+    "spp": 8,
     "aa": true,
     "backgroundColor": {
       "r": 0.0,
@@ -13,7 +18,7 @@
   },
   "camera": {
     "position": {
-      "x": 0.1,
+      "x": -0.1,
       "y": 0.2,
       "z": -0.1
     },

@@ -15,6 +15,7 @@ namespace rt004
 
     public ImageParameters imageParameters = new ImageParameters();
 
+    public AnimationInfo? animationInfo;
     public Scene() { }
     public Scene(AllSolids solids, Camera camera, AllLights lights, ImageParameters imageParameters)
     {
